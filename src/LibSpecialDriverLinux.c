@@ -1,5 +1,4 @@
 #ifdef __linux__
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -197,24 +196,6 @@ struct LibSpecialDrive *LibSpecialDriverGet(void)
 
     fclose(fp);
     return ctx;
-}
-
-bool LibSpecialDriverUmount(const char *path)
-{
-    pid_t pid = fork();
-    if (pid == 0)
-    {
-        execlp("umount", "umount", path, NULL);
-        _exit(127);
-    }
-    else if (pid > 0)
-    {
-        int status;
-        waitpid(pid, &status, 0);
-        return (WIFEXITED(status) && WEXITSTATUS(status) == 0);
-    }
-
-    return false;
 }
 
 static char *LibSpecialDriveConvertRawPath(const char *diskPath)
