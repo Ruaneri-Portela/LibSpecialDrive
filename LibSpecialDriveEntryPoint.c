@@ -24,7 +24,7 @@ void listPartition(LibSpecialDrive_BlockDevice *blk)
         if (blk->type == PARTITION_TYPE_GPT)
         {
             char *uuidStr = LibSpecialDriverGenUUIDString(blk->partitions[i].partitionMeta.gpt.uniquePartitionGuid);
-            printf("\t\tUUID: %sn", uuidStr);
+            printf("\t\tUUID: %s\n", uuidStr);
             free(uuidStr);
         }
         printf("\t\tVolume Path: %s\n", (part->path ? part->path : "None"));

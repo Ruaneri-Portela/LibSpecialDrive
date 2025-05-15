@@ -181,12 +181,12 @@ LibSpecialDrive_BlockDevice *LibSpecialDriverGetBlock(const char *path)
         IOCTL_DISK_GET_DRIVE_GEOMETRY,
         NULL, 0,
         &geometry, sizeof(geometry),
-        &ReadFile,
+        &bytesRead,
         NULL);
 
     if (!result)
     {
-        goto erro;
+        goto error;
     }
 
     blk->lbaSize = geometry.BytesPerSector;
