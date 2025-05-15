@@ -69,16 +69,16 @@ struct LibSpecialFlag *LibSpecialDriverIsSpecial(ProtectiveMBR *ptr)
 
 // --- Manipulação de blocos e partições ---
 
-bool LibSpecialDriverBlockAppend(struct LibSpecialDrive *driver, struct LibSpeicalDrive_BlockDevice **blockDevice)
+bool LibSpecialDriverBlockAppend(struct LibSpecialDrive *driver, struct LibSpecialDrive_BlockDevice **blockDevice)
 {
     if (!driver || !blockDevice || !(*blockDevice)->signature)
         return false;
 
     struct LibSpecialFlag *flag = LibSpecialDriverIsSpecial((*blockDevice)->signature);
-    struct LibSpeicalDrive_BlockDevice **list = flag ? &driver->specialBlockDevices : &driver->commonBlockDevices;
+    struct LibSpecialDrive_BlockDevice **list = flag ? &driver->specialBlockDevices : &driver->commonBlockDevices;
     size_t *count = flag ? &driver->specialBlockDeviceCount : &driver->commonBlockDeviceCount;
 
-    struct LibSpeicalDrive_BlockDevice *newList = realloc(*list, (*count + 1) * sizeof(struct LibSpeicalDrive_BlockDevice));
+    struct LibSpecialDrive_BlockDevice *newList = realloc(*list, (*count + 1) * sizeof(struct LibSpecialDrive_BlockDevice));
     if (!newList)
         return false;
 
@@ -92,7 +92,7 @@ bool LibSpecialDriverBlockAppend(struct LibSpecialDrive *driver, struct LibSpeic
     return true;
 }
 
-void LibSpecialDriverDestroyPartition(struct LibSpeicalDrive_Partition *part)
+void LibSpecialDriverDestroyPartition(struct LibSpecialDrive_Partition *part)
 {
     if (part)
     {
@@ -101,7 +101,7 @@ void LibSpecialDriverDestroyPartition(struct LibSpeicalDrive_Partition *part)
     }
 }
 
-void LibSpecialDriverDestroyBlock(struct LibSpeicalDrive_BlockDevice *blk)
+void LibSpecialDriverDestroyBlock(struct LibSpecialDrive_BlockDevice *blk)
 {
     if (blk)
     {
@@ -114,19 +114,39 @@ void LibSpecialDriverDestroyBlock(struct LibSpeicalDrive_BlockDevice *blk)
     }
 }
 
-void LibSpecialDriverMapperPartitions(LibSpeicalDrive_GPT_Header *header, uint8_t *partitionBuffer, struct LibSpeicalDrive_BlockDevice *blk)
+void LibSpecialDriverMapperPartitionsMBR(struct LibSpecialDrive_BlockDevice *blk)
+{
+    if (!blk)
+        return;
+
+    for (uint32_t i = 0; i < 4; i++)
+    {
+        MBR_Partition_Entry *entry = &blk->signature->partitions[i];
+        if (entry->type == 0x00)
+            continue;
+
+        blk->partitions = realloc(blk->partitions, (blk->partitionCount + 1) * sizeof(struct LibSpecialDrive_Partition));
+        memset(&blk->partitions[blk->partitionCount], 0, sizeof(struct LibSpecialDrive_Partition));
+        blk->partitions[blk->partitionCount].path = LibSpecialDriverPartitionPathLookup(blk->path, blk->partitionCount);
+        memcpy(&blk->partitions[blk->partitionCount].partitionMeta.mbr, entry, sizeof(MBR_Partition_Entry));
+        LibSpecialDrivePartitionGetPathMount(&blk->partitions[blk->partitionCount],blk->type);
+        blk->partitionCount++;
+    }
+}
+
+void LibSpecialDriverMapperPartitionsGPT(LibSpeicalDrive_GPT_Header *header, uint8_t *partitionBuffer, struct LibSpecialDrive_BlockDevice *blk)
 {
     if (!header || !partitionBuffer || !blk)
         return;
 
-    for (uint32_t i = 0; i < header->num_partition_entries; i++)
+    for (uint32_t i = 0; i < header->numPartitionEntries; i++)
     {
-        LibSpeicalDrive_GPT_Partition_Entry *entry = (LibSpeicalDrive_GPT_Partition_Entry *)(partitionBuffer + i * header->size_of_partition_entry);
+        LibSpeicalDrive_GPT_Partition_Entry *entry = (LibSpeicalDrive_GPT_Partition_Entry *)(partitionBuffer + i * header->sizeOfPartitionEntry);
 
         int isEmpty = 1;
         for (int j = 0; j < 16; j++)
         {
-            if (entry->partition_type_guid[j] != 0)
+            if (entry->partitionTypeGuid[j] != 0)
             {
                 isEmpty = 0;
                 break;
@@ -135,11 +155,11 @@ void LibSpecialDriverMapperPartitions(LibSpeicalDrive_GPT_Header *header, uint8_
         if (isEmpty)
             continue;
 
-        blk->partitions = realloc(blk->partitions, (blk->partitionCount + 1) * sizeof(struct LibSpeicalDrive_Partition));
-        memset(&blk->partitions[blk->partitionCount], 0, sizeof(struct LibSpeicalDrive_Partition));
+        blk->partitions = realloc(blk->partitions, (blk->partitionCount + 1) * sizeof(struct LibSpecialDrive_Partition));
+        memset(&blk->partitions[blk->partitionCount], 0, sizeof(struct LibSpecialDrive_Partition));
         blk->partitions[blk->partitionCount].path = LibSpecialDriverPartitionPathLookup(blk->path, blk->partitionCount);
-        memcpy(&blk->partitions[blk->partitionCount].partitionMeta, entry, sizeof(LibSpeicalDrive_GPT_Partition_Entry));
-        LibSpecialDrivePartitionGetPathMount(&blk->partitions[blk->partitionCount]);
+        memcpy(&blk->partitions[blk->partitionCount].partitionMeta.gpt, entry, sizeof(LibSpeicalDrive_GPT_Partition_Entry));
+        LibSpecialDrivePartitionGetPathMount(&blk->partitions[blk->partitionCount],blk->type);
         blk->partitionCount++;
     }
 }

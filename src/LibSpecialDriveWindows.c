@@ -19,10 +19,10 @@ static int LibSpecialDriveExtractDiskNumber(const char *path)
 
 char *LibSpecialDriverPartitionPathLookup(const char *path, int partitionNumber)
 {
-    return path
+    return (char *)path;
 }
 
-void LibSpecialDrivePartitionGetPath(struct LibSpeicalDrive_Partition *part)
+void LibSpecialDrivePartitionGetPathMount(struct LibSpecialDrive_Partition *part, enum LibSpecialDrive_PartitionType type)
 {
     if (!part || !part->path)
         return;
@@ -62,9 +62,8 @@ void LibSpecialDrivePartitionGetPath(struct LibSpeicalDrive_Partition *part)
                 DISK_EXTENT *ext = &extents.Extents[i];
 
                 if (ext->DiskNumber == diskNumber &&
-                    ext->StartingOffset.QuadPart == part->partitionMeta.starting_lba * SECTOR_SIZE)
+                    ext->StartingOffset.QuadPart == (type == PARTITION_TYPE_GPT ? part->partitionMeta.gpt.startingLba : part->partitionMeta.mbr.lbaStart) * SECTOR_SIZE)
                 {
-
                     char mountPaths[MAX_PATH] = {0};
                     DWORD len = 0;
                     part->path = strdup(volumePath);
@@ -87,7 +86,7 @@ void LibSpecialDrivePartitionGetPath(struct LibSpeicalDrive_Partition *part)
     FindVolumeClose(hVol);
 }
 
-struct LibSpeicalDrive_Partition *LibSpecialDriverGetPartition(struct LibSpeicalDrive_BlockDevice *blk)
+struct LibSpecialDrive_Partition *LibSpecialDriverGetPartition(struct LibSpecialDrive_BlockDevice *blk)
 {
     if (!blk || !blk->path)
         return NULL;
@@ -109,11 +108,13 @@ struct LibSpeicalDrive_Partition *LibSpecialDriverGetPartition(struct LibSpeical
     LibSpeicalDrive_GPT_Header *header = (LibSpeicalDrive_GPT_Header *)buffer;
     if (bytesRead != SECTOR_SIZE || memcmp(&header->signature, GPT_SIGNATURE, 8) != 0)
     {
+        blk->type = PARTITION_TYPE_MBR;
+        LibSpecialDriverMapperPartitionsMBR(blk);
         CloseHandle(hDevice);
-        return NULL;
+        return blk->partitions;
     }
 
-    size_t tableSize = header->num_partition_entries * header->size_of_partition_entry;
+    size_t tableSize = header->numPartitionEntries * header->sizeOfPartitionEntry;
     uint8_t *partitionBuffer = malloc(tableSize);
     if (!partitionBuffer)
     {
@@ -121,7 +122,7 @@ struct LibSpeicalDrive_Partition *LibSpecialDriverGetPartition(struct LibSpeical
         return NULL;
     }
 
-    SetFilePointer(hDevice, header->partition_entries_lba * SECTOR_SIZE, NULL, FILE_BEGIN);
+    SetFilePointer(hDevice, header->partitionEntriesLba * SECTOR_SIZE, NULL, FILE_BEGIN);
     if (!ReadFile(hDevice, partitionBuffer, tableSize, &bytesRead, NULL) || bytesRead != tableSize)
     {
         free(partitionBuffer);
@@ -129,14 +130,15 @@ struct LibSpeicalDrive_Partition *LibSpecialDriverGetPartition(struct LibSpeical
         return NULL;
     }
 
-    LibSpecialDriverMapperPartitions(header, partitionBuffer, blk);
+    blk->type = PARTITION_TYPE_GPT;
+    LibSpecialDriverMapperPartitionsGPT(header, partitionBuffer, blk);
 
     free(partitionBuffer);
     CloseHandle(hDevice);
     return blk->partitions;
 }
 
-struct LibSpeicalDrive_BlockDevice *LibSpecialDriverGetBlock(const char *path)
+struct LibSpecialDrive_BlockDevice *LibSpecialDriverGetBlock(const char *path)
 {
     if (!path)
         return NULL;
@@ -157,7 +159,7 @@ struct LibSpeicalDrive_BlockDevice *LibSpecialDriverGetBlock(const char *path)
     if (!DeviceIoControl(hDevice, IOCTL_DISK_GET_LENGTH_INFO, NULL, 0, &lenInfo, sizeof(lenInfo), &bytesRead, NULL))
         goto error;
 
-    struct LibSpeicalDrive_BlockDevice *blk = calloc(1, sizeof(struct LibSpeicalDrive_BlockDevice));
+    struct LibSpecialDrive_BlockDevice *blk = calloc(1, sizeof(struct LibSpecialDrive_BlockDevice));
     blk->size = lenInfo.Length.QuadPart;
     blk->path = strdup(path);
     blk->signature = MBR;
@@ -194,7 +196,7 @@ struct LibSpecialDrive *LibSpecialDriverGet(void)
     for (size_t i = 0;; i++)
     {
         snprintf(path, sizeof(path), "\\\\.\\PhysicalDrive%zu", i);
-        struct LibSpeicalDrive_BlockDevice *blk = LibSpecialDriverGetBlock(path);
+        struct LibSpecialDrive_BlockDevice *blk = LibSpecialDriverGetBlock(path);
         if (!blk)
         {
             if (failed++ > 8)
@@ -210,10 +212,10 @@ struct LibSpecialDrive *LibSpecialDriverGet(void)
 
 bool LibSpecialDriveMark(struct LibSpecialDrive *ctx, int blockNumber)
 {
-    if (!ctx || blockNumber < 0 || blockNumber >= ctx->specialBlockDeviceCount)
+    if (!ctx || blockNumber < 0 || blockNumber >= ctx->commonBlockDeviceCount)
         return false;
 
-    struct LibSpeicalDrive_BlockDevice *blk = &ctx->specialBlockDevices[blockNumber];
+    struct LibSpecialDrive_BlockDevice *blk = &ctx->commonBlockDevices[blockNumber];
 
     struct LibSpecialFlag flag = {0xFF, LIBSPECIAL_MAGIC_STRING, {0}};
     uint8_t *uuid = LibSpecialDriverGenUUID();
@@ -247,7 +249,7 @@ bool LibSpecialDriveUnmark(struct LibSpecialDrive *ctx, int blockNumber)
     if (!ctx || blockNumber < 0 || blockNumber >= ctx->specialBlockDeviceCount)
         return false;
 
-    struct LibSpeicalDrive_BlockDevice *blk = &ctx->specialBlockDevices[blockNumber];
+    struct LibSpecialDrive_BlockDevice *blk = &ctx->specialBlockDevices[blockNumber];
     if (!blk->signature)
         return false;
 

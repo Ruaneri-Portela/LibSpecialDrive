@@ -72,11 +72,13 @@ struct LibSpeicalDrive_Partition *LibSpecialDriverGetPartition(struct LibSpeical
     LibSpeicalDrive_GPT_Header *header = (LibSpeicalDrive_GPT_Header *)buffer;
     if (memcmp(&header->signature, GPT_SIGNATURE, 8) != 0)
     {
+        blk->type = PARTITION_TYPE_MBR;
+        LibSpecialDriverMapperPartitionsMBR(blk);
         close(fd);
-        return NULL;
+        return blk->partitions;
     }
 
-    size_t tableSize = header->num_partition_entries * header->size_of_partition_entry;
+    size_t tableSize = header->numPartitionEntries * header->sizeOfPartitionEntry;
     uint8_t *partitionBuffer = malloc(tableSize);
     if (!partitionBuffer)
     {
@@ -84,14 +86,14 @@ struct LibSpeicalDrive_Partition *LibSpecialDriverGetPartition(struct LibSpeical
         return NULL;
     }
 
-    if (pread(fd, partitionBuffer, tableSize, header->partition_entries_lba * SECTOR_SIZE) != tableSize)
+    if (pread(fd, partitionBuffer, tableSize, header->partitionEntriesLba * SECTOR_SIZE) != tableSize)
     {
         free(partitionBuffer);
         close(fd);
         return NULL;
     }
-
-    LibSpecialDriverMapperPartitions(header, partitionBuffer, blk);
+    blk->type = PARTITION_TYPE_GPT;
+    LibSpecialDriverMapperPartitionsGPT(header, partitionBuffer, blk);
     free(partitionBuffer);
     close(fd);
     return blk->partitions;

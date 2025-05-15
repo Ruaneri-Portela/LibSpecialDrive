@@ -2,15 +2,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void listPartition(struct LibSpeicalDrive_BlockDevice *blk)
+void listPartition(struct LibSpecialDrive_BlockDevice *blk)
 {
     if (!blk || blk->partitionCount <= 0)
         return;
 
     for (int i = 0; i < blk->partitionCount; i++)
     {
-        struct LibSpeicalDrive_Partition *part = &blk->partitions[i];
-        char *uuidStr = LibSpecialDriverGenUUIDString(blk->partitions[i].partitionMeta.unique_partition_guid);
+        struct LibSpecialDrive_Partition *part = &blk->partitions[i];
+        char *uuidStr = LibSpecialDriverGenUUIDString(blk->partitions[i].partitionMeta.gpt.uniquePartitionGuid);
         printf("\tPartition %d\n\t\tMount Point: %s\n\t\tUUID: %s\n\t\tVolume Path: %.48s\n", i, (part->mountPoint ? part->mountPoint : "None"), uuidStr, (part->path ? part->path : "None"));
         free(uuidStr); // LibSpecialDriverGenUUIDString deve alocar memória para o UUID, então liberamos aqui
     }
@@ -25,7 +25,7 @@ void list(struct LibSpecialDrive *lb)
     if (lb->commonBlockDeviceCount >= 0)
         for (size_t i = 0; i < lb->commonBlockDeviceCount; i++)
         {
-            struct LibSpeicalDrive_BlockDevice *bd = &lb->commonBlockDevices[i];
+            struct LibSpecialDrive_BlockDevice *bd = &lb->commonBlockDevices[i];
             printf(
                 "Common Device %zu: %s, Size: %lld bytes, Removable: %s\n",
                 i,
@@ -41,7 +41,7 @@ void list(struct LibSpecialDrive *lb)
     if (lb->specialBlockDeviceCount >= 0)
         for (size_t i = 0; i < lb->specialBlockDeviceCount; i++)
         {
-            struct LibSpeicalDrive_BlockDevice *bd = &lb->specialBlockDevices[i];
+            struct LibSpecialDrive_BlockDevice *bd = &lb->specialBlockDevices[i];
             struct LibSpecialFlag *flag = (struct LibSpecialFlag *)bd->signature->boot_code;
             char *uuidStr = LibSpecialDriverGenUUIDString(flag->uuid);
             printf(
@@ -64,8 +64,8 @@ int main()
 {
     struct LibSpecialDrive *lb = LibSpecialDriverGet();
     // Exibir resultados
-    list(lb);
-    printf("%d\n\n", LibSpecialDriveMark(lb, 0));
+    //list(lb);
+    //printf("%d\n\n", LibSpecialDriveMark(lb, 0));
     list(lb);
     printf("%d\n\n", LibSpecialDriveUnmark(lb, 0));
     list(lb);
