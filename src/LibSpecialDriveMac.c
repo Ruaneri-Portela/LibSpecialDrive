@@ -99,7 +99,7 @@ LibSpecialDrive_BlockDevice *LibSpecialDriverGetBlock(const char *path)
     if (!path)
         return NULL;
 
-    ProtectiveMBR *MBR = malloc(sizeof(ProtectiveMBR));
+    LibSpecialDrive_Protective_MBR *MBR = malloc(sizeof(LibSpecialDrive_Protective_MBR));
     if (!MBR)
         return NULL;
 
@@ -111,7 +111,7 @@ LibSpecialDrive_BlockDevice *LibSpecialDriverGetBlock(const char *path)
         return NULL;
     }
 
-    ssize_t bytesRead = read(fd, MBR, sizeof(ProtectiveMBR));
+    ssize_t bytesRead = read(fd, MBR, sizeof(LibSpecialDrive_Protective_MBR));
     if (bytesRead < 0)
     {
         free(MBR);
@@ -120,7 +120,7 @@ LibSpecialDrive_BlockDevice *LibSpecialDriverGetBlock(const char *path)
         return NULL;
     }
 
-    if (bytesRead != sizeof(ProtectiveMBR))
+    if (bytesRead != sizeof(LibSpecialDrive_Protective_MBR))
     {
         free(MBR);
         fprintf(stderr, "read: %s\n", strerror(errno));
@@ -281,10 +281,10 @@ bool LibSpecialDriveMark(LibSpecialDrive *ctx, int blockNumber)
     memcpy(flag.uuid, uuid, 16);
     free(uuid);
 
-    ProtectiveMBR *mbr = malloc(sizeof(ProtectiveMBR));
+    LibSpecialDrive_Protective_MBR *mbr = malloc(sizeof(LibSpecialDrive_Protective_MBR));
     if (!mbr)
         return false;
-    memcpy(mbr, blk->signature, sizeof(ProtectiveMBR));
+    memcpy(mbr, blk->signature, sizeof(LibSpecialDrive_Protective_MBR));
     memcpy(mbr->boot_code, &flag, sizeof(LibSpecialDrive_Flag));
 
     if (!LibSpecialDriverUmount(blk->path))
@@ -312,14 +312,14 @@ bool LibSpecialDriveMark(LibSpecialDrive *ctx, int blockNumber)
         return false;
     }
 
-    ssize_t bytesWritten = write(fd, mbr, sizeof(ProtectiveMBR));
+    ssize_t bytesWritten = write(fd, mbr, sizeof(LibSpecialDrive_Protective_MBR));
 
     free(path);
     free(mbr);
     fsync(fd);
     close(fd);
     LibSpecialDriverReload(ctx);
-    return (bytesWritten == sizeof(ProtectiveMBR));
+    return (bytesWritten == sizeof(LibSpecialDrive_Protective_MBR));
 }
 
 bool LibSpecialDriveUnmark(LibSpecialDrive *ctx, int blockNumber)
@@ -331,7 +331,7 @@ bool LibSpecialDriveUnmark(LibSpecialDrive *ctx, int blockNumber)
     if (!blk->signature)
         return false;
 
-    ProtectiveMBR *mbr = malloc(sizeof(ProtectiveMBR));
+    LibSpecialDrive_Protective_MBR *mbr = malloc(sizeof(LibSpecialDrive_Protective_MBR));
     if (!mbr)
         return false;
 
@@ -361,8 +361,8 @@ bool LibSpecialDriveUnmark(LibSpecialDrive *ctx, int blockNumber)
         return false;
     }
 
-    ssize_t bytesRead = read(fd, mbr, sizeof(ProtectiveMBR));
-    if (bytesRead != sizeof(ProtectiveMBR))
+    ssize_t bytesRead = read(fd, mbr, sizeof(LibSpecialDrive_Protective_MBR));
+    if (bytesRead != sizeof(LibSpecialDrive_Protective_MBR))
     {
         free(path);
         free(mbr);
@@ -372,9 +372,9 @@ bool LibSpecialDriveUnmark(LibSpecialDrive *ctx, int blockNumber)
 
     memset(mbr->boot_code, 0, sizeof(mbr->boot_code));
 
-    ssize_t bytesWritten = write(fd, mbr, sizeof(ProtectiveMBR));
+    ssize_t bytesWritten = write(fd, mbr, sizeof(LibSpecialDrive_Protective_MBR));
 
-    if (bytesWritten != sizeof(ProtectiveMBR))
+    if (bytesWritten != sizeof(LibSpecialDrive_Protective_MBR))
     {
         free(path);
         free(mbr);
@@ -382,8 +382,8 @@ bool LibSpecialDriveUnmark(LibSpecialDrive *ctx, int blockNumber)
         return false;
     }
 
-    bytesRead = read(fd, mbr, sizeof(ProtectiveMBR));
-    if (bytesRead != sizeof(ProtectiveMBR))
+    bytesRead = read(fd, mbr, sizeof(LibSpecialDrive_Protective_MBR));
+    if (bytesRead != sizeof(LibSpecialDrive_Protective_MBR))
     {
         free(path);
         free(mbr);
@@ -407,6 +407,6 @@ bool LibSpecialDriveUnmark(LibSpecialDrive *ctx, int blockNumber)
     fsync(fd);
     close(fd);
     LibSpecialDriverReload(ctx);
-    return (bytesWritten == sizeof(ProtectiveMBR));
+    return (bytesWritten == sizeof(LibSpecialDrive_Protective_MBR));
 }
 #endif

@@ -53,53 +53,50 @@ void LibSpecialDrivePartitionGetPathMount(LibSpecialDrive_Partition *part, enum 
     endmntent(fp);
 }
 
-LibSpecialDrive_Partition *LibSpecialDriverGetPartition(LibSpecialDrive_BlockDevice *blk)
+LibSpecialDrive_Partition *LibSpecialDriverGetPartition(LibSpecialDrive_BlockDevice *blk, int fd)
 {
-    if (!blk || !blk->path)
+    if (!blk || !blk->path || fd < 0)
         return NULL;
 
-    int fd = open(blk->path, O_RDONLY);
-    if (fd < 0)
-        return NULL;
+    fsync(fd);
 
-    uint8_t buffer[SECTOR_SIZE];
+    LibSpeicalDrive_GPT_Header *header = malloc(sizeof(LibSpeicalDrive_GPT_Header));
     ssize_t bytesRead;
 
-    if ((bytesRead = pread(fd, buffer, SECTOR_SIZE, GPT_HEADER_OFFSET)) != SECTOR_SIZE)
+    if ((bytesRead = pread(fd, header, sizeof(LibSpeicalDrive_GPT_Header), blk->signature->partitions->lbaStart * blk->lbaSize)) != sizeof(LibSpeicalDrive_GPT_Header))
     {
-        close(fd);
+        free(header);
         return NULL;
     }
 
-    LibSpeicalDrive_GPT_Header *header = (LibSpeicalDrive_GPT_Header *)buffer;
-    if (bytesRead != SECTOR_SIZE || memcmp(&header->signature, GPT_SIGNATURE, 8) != 0)
+    if (memcmp(&header->signature, GPT_SIGNATURE, 8) != 0)
     {
+        free(header);
         blk->type = PARTITION_TYPE_MBR;
         LibSpecialDriverMapperPartitionsMBR(blk);
-        close(fd);
         return blk->partitions;
     }
 
     size_t tableSize = header->numPartitionEntries * header->sizeOfPartitionEntry;
-    uint8_t *partitionBuffer = malloc(tableSize);
+    LibSpeicalDrive_GPT_Partition_Entry *partitionBuffer = malloc(tableSize);
     if (!partitionBuffer)
     {
-        close(fd);
+        free(header);
         return NULL;
     }
 
-    if (pread(fd, partitionBuffer, tableSize, header->partitionEntriesLba * SECTOR_SIZE) != tableSize)
+    if (pread(fd, partitionBuffer, tableSize, header->partitionEntriesLba * blk->lbaSize) != tableSize)
     {
+        free(header);
         free(partitionBuffer);
-        close(fd);
         return NULL;
     }
 
     blk->type = PARTITION_TYPE_GPT;
-    LibSpecialDriverMapperPartitionsGPT(header, partitionBuffer, blk);
+    LibSpecialDriverMapperPartitionsGPT(header, (uint8_t *)partitionBuffer, blk);
 
+    free(header);
     free(partitionBuffer);
-    close(fd);
     return blk->partitions;
 }
 
@@ -108,7 +105,7 @@ LibSpecialDrive_BlockDevice *LibSpecialDriverGetBlock(const char *path)
     if (!path)
         return NULL;
 
-    ProtectiveMBR *MBR = malloc(sizeof(ProtectiveMBR));
+    LibSpecialDrive_Protective_MBR *MBR = calloc(1, sizeof(LibSpecialDrive_Protective_MBR));
     if (!MBR)
         return NULL;
 
@@ -120,8 +117,8 @@ LibSpecialDrive_BlockDevice *LibSpecialDriverGetBlock(const char *path)
         return NULL;
     }
 
-    ssize_t bytesRead = read(fd, MBR, sizeof(ProtectiveMBR));
-    if (bytesRead != sizeof(ProtectiveMBR))
+    ssize_t bytesRead = read(fd, MBR, sizeof(LibSpecialDrive_Protective_MBR));
+    if (bytesRead != sizeof(LibSpecialDrive_Protective_MBR))
     {
         perror("read");
         close(fd);
@@ -129,7 +126,7 @@ LibSpecialDrive_BlockDevice *LibSpecialDriverGetBlock(const char *path)
         return NULL;
     }
 
-    LibSpecialDrive_BlockDevice *blk = malloc(sizeof(*blk));
+    LibSpecialDrive_BlockDevice *blk = calloc(1, sizeof(LibSpecialDrive_BlockDevice));
     if (!blk)
     {
         close(fd);
@@ -147,15 +144,24 @@ LibSpecialDrive_BlockDevice *LibSpecialDriverGetBlock(const char *path)
     }
 
     if (ioctl(fd, BLKSSZGET, &blk->lbaSize) < 0)
+    {
+        close(fd);
+        free(MBR);
+        free(blk);
         perror("ioctl(BLKSSZGET)");
+    }
 
     if (ioctl(fd, BLKGETSIZE64, &blk->size) < 0)
+    {
+        close(fd);
+        free(MBR);
+        free(blk);
         perror("ioctl(BLKGETSIZE64)");
-
-    close(fd);
+    }
 
     blk->signature = MBR;
-    blk->partitions = LibSpecialDriverGetPartition(blk);
+    blk->partitions = LibSpecialDriverGetPartition(blk, fd);
+    close(fd);
     return blk;
 }
 
@@ -201,11 +207,6 @@ LibSpecialDrive *LibSpecialDriverGet(void)
     return ctx;
 }
 
-static char *LibSpecialDriveConvertRawPath(const char *diskPath)
-{
-    return strdup(diskPath); // no Linux, o caminho é o mesmo
-}
-
 bool LibSpecialDriveMark(LibSpecialDrive *ctx, int blockNumber)
 {
     if (!ctx || blockNumber < 0 || blockNumber >= ctx->commonBlockDeviceCount)
@@ -220,26 +221,21 @@ bool LibSpecialDriveMark(LibSpecialDrive *ctx, int blockNumber)
 
     memcpy(flag.uuid, uuid, 16);
     free(uuid);
-
-    ProtectiveMBR *mbr = malloc(sizeof(ProtectiveMBR));
-    memcpy(mbr, blk->signature, sizeof(*mbr));
-    memcpy(mbr->boot_code, &flag, sizeof(flag));
+    memcpy(blk->signature->boot_code, &flag, sizeof(LibSpecialDrive_Flag));
 
     int fd = open(blk->path, O_WRONLY);
     if (fd < 0)
     {
         perror("open");
-        free(mbr);
         return false;
     }
 
-    flock(fd, LOCK_EX);
-    ssize_t bytesWritten = write(fd, mbr, sizeof(*mbr));
-    fsync(fd);
+    ssize_t bytesWritten = write(fd, blk->signature, sizeof(LibSpecialDrive_Protective_MBR));
     close(fd);
-    free(mbr);
 
-    return (bytesWritten == sizeof(ProtectiveMBR)) && LibSpecialDriverReload(ctx);
+    LibSpecialDriverReload(ctx);
+
+    return (bytesWritten == sizeof(LibSpecialDrive_Protective_MBR));
 }
 
 bool LibSpecialDriveUnmark(LibSpecialDrive *ctx, int blockNumber)
@@ -249,35 +245,19 @@ bool LibSpecialDriveUnmark(LibSpecialDrive *ctx, int blockNumber)
 
     LibSpecialDrive_BlockDevice *blk = &ctx->specialBlockDevices[blockNumber];
 
-    int fd = open(blk->path, O_RDWR);
+    int fd = open(blk->path, O_WRONLY);
     if (fd < 0)
     {
         perror("open");
         return false;
     }
 
-    flock(fd, LOCK_EX);
-
-    ProtectiveMBR mbr;
-    if (read(fd, &mbr, sizeof(mbr)) != sizeof(mbr))
-    {
-        close(fd);
-        return false;
-    }
-
-    memset(mbr.boot_code, 0, sizeof(mbr.boot_code));
-
-    if (write(fd, &mbr, sizeof(mbr)) != sizeof(mbr))
-    {
-        close(fd);
-        return false;
-    }
-
-    fsync(fd);
+    memset(blk->signature->boot_code, 0, sizeof(LibSpecialDrive_Flag));
+    ssize_t bytesWritten = write(fd, blk->signature, sizeof(LibSpecialDrive_Protective_MBR)) != sizeof(LibSpecialDrive_Protective_MBR);
     close(fd);
 
-    return LibSpecialDriverReload(ctx);
-    ;
+    LibSpecialDriverReload(ctx);
+    return (bytesWritten == sizeof(LibSpecialDrive_Protective_MBR));
 }
 
 #endif // __linux__

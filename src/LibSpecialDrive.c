@@ -6,6 +6,7 @@
 
 // Estado interno
 static bool randIsSeeded = false;
+static uint8_t zeroGuid[16] = {0};
 
 // --- UUID Functions ---
 
@@ -51,7 +52,7 @@ char *LibSpecialDriverGenUUIDString(uint8_t *uuid)
 
 // --- Verificação de assinatura especial ---
 
-LibSpecialDrive_Flag *LibSpecialDriverIsSpecial(ProtectiveMBR *ptr)
+LibSpecialDrive_Flag *LibSpecialDriverIsSpecial(LibSpecialDrive_Protective_MBR *ptr)
 {
     if (!ptr)
         return NULL;
@@ -110,6 +111,7 @@ void LibSpecialDriverDestroyBlock(LibSpecialDrive_BlockDevice *blk)
         for (int i = 0; i < blk->partitionCount; i++)
             LibSpecialDriverDestroyPartition(&blk->partitions[i]);
 
+        free(blk->signature);
         free(blk->partitions);
     }
 }
@@ -121,14 +123,14 @@ void LibSpecialDriverMapperPartitionsMBR(LibSpecialDrive_BlockDevice *blk)
 
     for (uint32_t i = 0; i < 4; i++)
     {
-        MBR_Partition_Entry *entry = &blk->signature->partitions[i];
+        LibSpecialDrive_MBR_Partition_Entry *entry = &blk->signature->partitions[i];
         if (entry->type == 0x00)
             continue;
 
         blk->partitions = realloc(blk->partitions, (blk->partitionCount + 1) * sizeof(LibSpecialDrive_Partition));
         memset(&blk->partitions[blk->partitionCount], 0, sizeof(LibSpecialDrive_Partition));
         blk->partitions[blk->partitionCount].path = LibSpecialDriverPartitionPathLookup(blk->path, blk->partitionCount);
-        memcpy(&blk->partitions[blk->partitionCount].partitionMeta.mbr, entry, sizeof(MBR_Partition_Entry));
+        memcpy(&blk->partitions[blk->partitionCount].partitionMeta.mbr, entry, sizeof(LibSpecialDrive_MBR_Partition_Entry));
         LibSpecialDrivePartitionGetPathMount(&blk->partitions[blk->partitionCount], blk->type);
         blk->partitionCount++;
     }
@@ -143,17 +145,10 @@ void LibSpecialDriverMapperPartitionsGPT(LibSpeicalDrive_GPT_Header *header, uin
     {
         LibSpeicalDrive_GPT_Partition_Entry *entry = (LibSpeicalDrive_GPT_Partition_Entry *)(partitionBuffer + i * header->sizeOfPartitionEntry);
 
-        int isEmpty = 1;
-        for (int j = 0; j < 16; j++)
+        if (memcmp(entry->partitionTypeGuid, zeroGuid, 16) == 0)
         {
-            if (entry->partitionTypeGuid[j] != 0)
-            {
-                isEmpty = 0;
-                break;
-            }
-        }
-        if (isEmpty)
             continue;
+        }
 
         blk->partitions = realloc(blk->partitions, (blk->partitionCount + 1) * sizeof(LibSpecialDrive_Partition));
         memset(&blk->partitions[blk->partitionCount], 0, sizeof(LibSpecialDrive_Partition));
