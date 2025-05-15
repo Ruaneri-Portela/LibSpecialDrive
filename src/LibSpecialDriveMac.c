@@ -286,7 +286,6 @@ bool LibSpecialDriveMark(LibSpecialDrive *ctx, int blockNumber)
 
     if (!LibSpecialDriverUmount(blk->path))
     {
-        free(mbr);
         return false;
     }
 
@@ -295,7 +294,6 @@ bool LibSpecialDriveMark(LibSpecialDrive *ctx, int blockNumber)
     if (fd < 0)
     {
         free(path);
-        free(mbr);
         perror("open failed");
         return false;
     }
@@ -303,7 +301,6 @@ bool LibSpecialDriveMark(LibSpecialDrive *ctx, int blockNumber)
     if (flock(fd, LOCK_EX) < 0)
     {
         free(path);
-        free(mbr);
         close(fd);
         perror("flock failed");
         return false;
@@ -312,7 +309,6 @@ bool LibSpecialDriveMark(LibSpecialDrive *ctx, int blockNumber)
     ssize_t bytesWritten = write(fd, mbr, sizeof(LibSpecialDrive_Protective_MBR));
 
     free(path);
-    free(mbr);
     fsync(fd);
     close(fd);
     LibSpecialDriverReload(ctx);
@@ -334,7 +330,6 @@ bool LibSpecialDriveUnmark(LibSpecialDrive *ctx, int blockNumber)
 
     if (!LibSpecialDriverUmount(blk->path))
     {
-        free(mbr);
         return false;
     }
 
@@ -344,7 +339,6 @@ bool LibSpecialDriveUnmark(LibSpecialDrive *ctx, int blockNumber)
     if (fd < 0)
     {
         free(path);
-        free(mbr);
         perror("open failed");
         return false;
     }
@@ -352,7 +346,6 @@ bool LibSpecialDriveUnmark(LibSpecialDrive *ctx, int blockNumber)
     if (flock(fd, LOCK_EX) < 0)
     {
         free(path);
-        free(mbr);
         close(fd);
         perror("flock failed");
         return false;
@@ -362,19 +355,17 @@ bool LibSpecialDriveUnmark(LibSpecialDrive *ctx, int blockNumber)
     if (bytesRead != sizeof(LibSpecialDrive_Protective_MBR))
     {
         free(path);
-        free(mbr);
         close(fd);
         return false;
     }
 
-    memset(mbr->boot_code, 0, sizeof(mbr->boot_code));
+    memset(blk->signature->boot_code, 0, sizeof(ProtectiveMBR));
 
     ssize_t bytesWritten = write(fd, mbr, sizeof(LibSpecialDrive_Protective_MBR));
 
     if (bytesWritten != sizeof(LibSpecialDrive_Protective_MBR))
     {
         free(path);
-        free(mbr);
         close(fd);
         return false;
     }
@@ -400,7 +391,6 @@ bool LibSpecialDriveUnmark(LibSpecialDrive *ctx, int blockNumber)
     }
 
     free(path);
-    free(mbr);
     fsync(fd);
     close(fd);
     LibSpecialDriverReload(ctx);
