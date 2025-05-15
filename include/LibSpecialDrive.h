@@ -2,13 +2,18 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-// GPT (GUID Partition Table)
+// =====================================================================================
+// Constantes da GPT
+// =====================================================================================
 #define SECTOR_SIZE 512
 #define GPT_HEADER_OFFSET 512
 #define GPT_SIGNATURE "EFI PART"
 #define MAX_PARTITIONS 128
 #define PARTITION_ENTRY_SIZE 128
 
+// =====================================================================================
+// Estruturas GPT (GUID Partition Table)
+// =====================================================================================
 typedef struct
 {
     uint8_t partitionTypeGuid[16];
@@ -37,7 +42,9 @@ typedef struct
     uint32_t partitionEntriesCrc32;
 } __attribute__((packed)) LibSpeicalDrive_GPT_Header;
 
-// MBR (Master Boot Record)
+// =====================================================================================
+// Estruturas MBR (Master Boot Record)
+// =====================================================================================
 typedef struct
 {
     uint8_t status;      // 0x00
@@ -57,7 +64,9 @@ typedef struct
     uint16_t signature;                // 0xAA55
 } __attribute__((packed)) ProtectiveMBR;
 
-// LibSpecialDrive.h
+// =====================================================================================
+// Enums de Flags e Tipos
+// =====================================================================================
 enum LibSpecialDrive_BlockFlags
 {
     BLOCK_FLAG_IS_REMOVABLE = 1 << 0,
@@ -71,6 +80,9 @@ enum LibSpecialDrive_PartitionType
     PARTITION_TYPE_MBR = 2
 };
 
+// =====================================================================================
+// Estruturas Principais
+// =====================================================================================
 union LibSpecialDrive_PartitionMeta
 {
     LibSpeicalDrive_GPT_Partition_Entry gpt;
@@ -113,40 +125,27 @@ typedef struct
 
 #define LIBSPECIAL_MAGIC_STRING "LIBSPECIALDRIVE_DEVICE"
 
-// Universal
-
+// =====================================================================================
+// Funções Universais da Biblioteca
+// =====================================================================================
 LibSpecialDrive_Flag *LibSpecialDriverIsSpecial(ProtectiveMBR *ptr);
-
 uint8_t *LibSpecialDriverGenUUID(void);
-
 char *LibSpecialDriverGenUUIDString(uint8_t *uuid);
-
 bool LibSpecialDriverBlockAppend(LibSpecialDrive *driver, LibSpecialDrive_BlockDevice **blockDevice);
-
 void LibSpecialDriverDestroyPartition(LibSpecialDrive_Partition *part);
-
 void LibSpecialDriverDestroyBlock(LibSpecialDrive_BlockDevice *blk);
-
 void LibSpecialDriverMapperPartitionsMBR(LibSpecialDrive_BlockDevice *blk);
-
 void LibSpecialDriverMapperPartitionsGPT(LibSpeicalDrive_GPT_Header *header, uint8_t *partitionBuffer, LibSpecialDrive_BlockDevice *blk);
-
 bool LibSpecialDriverReload(LibSpecialDrive *ctx);
-
 void LibSpecialDriverDestroy(LibSpecialDrive **ctx);
 
-// System Dependent Functions
-
+// =====================================================================================
+// Funções de Sistema Dependente
+// =====================================================================================
 char *LibSpecialDriverPartitionPathLookup(const char *path, int partNumber);
-
 void LibSpecialDrivePartitionGetPathMount(LibSpecialDrive_Partition *part, enum LibSpecialDrive_PartitionType type);
-
 LibSpecialDrive_Partition *LibSpecialDriverGetPartition(LibSpecialDrive_BlockDevice *blk);
-
 LibSpecialDrive_BlockDevice *LibSpecialDriverGetBlock(const char *path);
-
 LibSpecialDrive *LibSpecialDriverGet(void);
-
 bool LibSpecialDriveMark(LibSpecialDrive *ctx, int blockNumber);
-
 bool LibSpecialDriveUnmark(LibSpecialDrive *ctx, int blockNumber);
