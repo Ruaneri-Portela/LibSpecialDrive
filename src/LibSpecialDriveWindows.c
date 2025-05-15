@@ -7,18 +7,17 @@
 
 static int LibSpecialDriveExtractDiskNumber(const char *path)
 {
-    const char *prefix = "\\\\.\\PhysicalDrive";
+    const char *prefix = "\\.\\PhysicalDrive";
     const char *pos = strstr(path, prefix);
     if (!pos)
         return -1;
-
     pos += strlen(prefix);
     return (*pos) ? atoi(pos) : -1;
 }
 
 char *LibSpecialDriverPartitionPathLookup(const char *path, int partitionNumber)
 {
-    return (char *)path;
+    return (char *)path; // Placeholder
 }
 
 void LibSpecialDrivePartitionGetPathMount(LibSpecialDrive_Partition *part, enum LibSpecialDrive_PartitionType type)
@@ -26,13 +25,12 @@ void LibSpecialDrivePartitionGetPathMount(LibSpecialDrive_Partition *part, enum 
     if (!part || !part->path)
         return;
 
-    int diskNumber = LibSpecialDriveExtractDiskNumber(part->path);
+    DWORD diskNumber = LibSpecialDriveExtractDiskNumber(part->path);
     if (diskNumber < 0)
         return;
 
     part->path = NULL;
-
-    char volumePath[MAX_PATH];
+    CHAR volumePath[MAX_PATH];
     HANDLE hVol = FindFirstVolumeA(volumePath, MAX_PATH);
     if (hVol == INVALID_HANDLE_VALUE)
         return;
@@ -60,9 +58,14 @@ void LibSpecialDrivePartitionGetPathMount(LibSpecialDrive_Partition *part, enum 
             {
                 DISK_EXTENT *ext = &extents.Extents[i];
 
+                LONGLONG startLba = (type == PARTITION_TYPE_GPT)
+                                        ? part->partitionMeta.gpt.startingLba
+                                        : part->partitionMeta.mbr.lbaStart;
+
                 if (ext->DiskNumber == diskNumber &&
-                    ext->StartingOffset.QuadPart == (type == PARTITION_TYPE_GPT ? part->partitionMeta.gpt.startingLba : part->partitionMeta.mbr.lbaStart) * (*part->lbaSize))
+                    ext->StartingOffset.QuadPart == startLba * (*part->lbaSize))
                 {
+
                     char mountPaths[MAX_PATH] = {0};
                     DWORD len = 0;
                     part->path = strdup(volumePath);
@@ -70,12 +73,10 @@ void LibSpecialDrivePartitionGetPathMount(LibSpecialDrive_Partition *part, enum 
                     {
                         CloseHandle(hVolume);
                         FindVolumeClose(hVol);
-                        size_t mountPathLen = strlen(mountPaths);
-                        if (mountPathLen < 2)
-                            return;
-                        part->mountPoint = strdup(mountPaths);
+                        if (strlen(mountPaths) >= 2)
+                            part->mountPoint = strdup(mountPaths);
+                        return;
                     }
-                    return;
                 }
             }
         }
@@ -90,61 +91,62 @@ LibSpecialDrive_Partition *LibSpecialDriverGetPartition(LibSpecialDrive_BlockDev
     if (!blk || !blk->path || !hDevice || !blk->signature)
         return NULL;
 
-    LibSpeicalDrive_GPT_Header *header = malloc(512);
+    HANDLE heap = GetProcessHeap();
+    LibSpeicalDrive_GPT_Header *header = HeapAlloc(heap, 0, 512);
     if (!header)
         return NULL;
 
     DWORD bytesRead;
     LARGE_INTEGER offset;
-
     offset.QuadPart = blk->signature->partitions->lbaStart * blk->lbaSize;
+
     if (SetFilePointer(hDevice, offset.LowPart, &offset.HighPart, FILE_BEGIN) == INVALID_SET_FILE_POINTER && GetLastError() != NO_ERROR)
     {
-        free(header);
+        HeapFree(heap, 0, header);
         return NULL;
     }
 
-    if (!ReadFile(hDevice, header, 512, &bytesRead, NULL) ||
-        bytesRead != 512)
+    if (!ReadFile(hDevice, header, 512, &bytesRead, NULL) || bytesRead != 512)
     {
-        free(header);
+        HeapFree(heap, 0, header);
         return NULL;
     }
 
     if (memcmp(&header->signature, GPT_SIGNATURE, 8) != 0)
     {
-        free(header);
+        HeapFree(heap, 0, header);
         blk->type = PARTITION_TYPE_MBR;
         LibSpecialDriverMapperPartitionsMBR(blk);
         return blk->partitions;
     }
 
     DWORD tableSize = header->numPartitionEntries * header->sizeOfPartitionEntry;
-    LibSpeicalDrive_GPT_Partition_Entry *partitionBuffer = malloc(tableSize);
+    LibSpeicalDrive_GPT_Partition_Entry *partitionBuffer = HeapAlloc(heap, 0, tableSize);
     if (!partitionBuffer)
     {
-        free(header);
+        HeapFree(heap, 0, header);
         return NULL;
     }
 
     offset.QuadPart = header->partitionEntriesLba * blk->lbaSize;
     if (SetFilePointer(hDevice, offset.LowPart, &offset.HighPart, FILE_BEGIN) == INVALID_SET_FILE_POINTER && GetLastError() != NO_ERROR)
     {
-        free(header);
-        free(partitionBuffer);
+        HeapFree(heap, 0, partitionBuffer);
+        HeapFree(heap, 0, header);
         return NULL;
     }
 
     if (!ReadFile(hDevice, partitionBuffer, tableSize, &bytesRead, NULL) || bytesRead != tableSize)
     {
-        free(header);
-        free(partitionBuffer);
+        HeapFree(heap, 0, partitionBuffer);
+        HeapFree(heap, 0, header);
         return NULL;
     }
 
     blk->type = PARTITION_TYPE_GPT;
     LibSpecialDriverMapperPartitionsGPT(header, (uint8_t *)partitionBuffer, blk);
-    free(header);
+    HeapFree(heap, 0, partitionBuffer);
+    HeapFree(heap, 0, header);
     return blk->partitions;
 }
 
@@ -162,7 +164,7 @@ LibSpecialDrive_BlockDevice *LibSpecialDriverGetBlock(const char *path)
         goto error_mbr;
 
     DWORD bytesRead;
-    if (!ReadFile(hDevice, MBR, sizeof(LibSpecialDrive_Protective_MBR), &bytesRead, NULL) || bytesRead != sizeof(LibSpecialDrive_Protective_MBR))
+    if (!ReadFile(hDevice, MBR, sizeof(*MBR), &bytesRead, NULL) || bytesRead != sizeof(*MBR))
         goto error_device;
 
     GET_LENGTH_INFORMATION lenInfo;
@@ -173,7 +175,7 @@ LibSpecialDrive_BlockDevice *LibSpecialDriverGetBlock(const char *path)
     if (!DeviceIoControl(hDevice, IOCTL_DISK_GET_DRIVE_GEOMETRY, NULL, 0, &geometry, sizeof(geometry), &bytesRead, NULL))
         goto error_device;
 
-    LibSpecialDrive_BlockDevice *blk = calloc(1, sizeof(LibSpecialDrive_BlockDevice));
+    LibSpecialDrive_BlockDevice *blk = calloc(1, sizeof(*blk));
     if (!blk)
         goto error_device;
 
@@ -185,7 +187,6 @@ LibSpecialDrive_BlockDevice *LibSpecialDriverGetBlock(const char *path)
     blk->size = lenInfo.Length.QuadPart;
     blk->lbaSize = geometry.BytesPerSector;
 
-    // Verifica se o dispositivo é removível
     STORAGE_PROPERTY_QUERY query = {StorageDeviceProperty, PropertyStandardQuery};
     BYTE buffer[1024] = {0};
     if (DeviceIoControl(hDevice, IOCTL_STORAGE_QUERY_PROPERTY, &query, sizeof(query), buffer, sizeof(buffer), &bytesRead, NULL))
@@ -195,11 +196,8 @@ LibSpecialDrive_BlockDevice *LibSpecialDriverGetBlock(const char *path)
             blk->flags |= BLOCK_FLAG_IS_REMOVABLE;
     }
 
-    // Tenta obter partições
     if (!LibSpecialDriverGetPartition(blk, hDevice))
-    {
         goto error_path;
-    }
 
     CloseHandle(hDevice);
     return blk;
@@ -223,9 +221,9 @@ LibSpecialDrive *LibSpecialDriverGet(void)
 
     char path[MAX_PATH];
     int failed = 0;
-    for (size_t i = 0;; i++)
+    for (DWORD i = 0;; i++)
     {
-        snprintf(path, sizeof(path), "\\\\.\\PhysicalDrive%zu", i);
+        snprintf(path, sizeof(path), "\\\\.\\PhysicalDrive%lu", i);
         LibSpecialDrive_BlockDevice *blk = LibSpecialDriverGetBlock(path);
         if (!blk)
         {
@@ -244,12 +242,10 @@ bool LibSpecialDriveMark(LibSpecialDrive *ctx, int blockNumber)
 {
     if (!ctx || blockNumber < 0 || blockNumber >= ctx->commonBlockDeviceCount)
         return false;
-
     LibSpecialDrive_BlockDevice *blk = &ctx->commonBlockDevices[blockNumber];
 
     LibSpecialDrive_Flag flag = {0xFF, LIBSPECIAL_MAGIC_STRING, {0}};
-    uint8_t *uuid = LibSpecialDriverGenUUID();
-
+    LPBYTE uuid = LibSpecialDriverGenUUID();
     memcpy(flag.uuid, uuid, 16);
     free(uuid);
 
@@ -258,27 +254,25 @@ bool LibSpecialDriveMark(LibSpecialDrive *ctx, int blockNumber)
         return false;
 
     DWORD bytesRead;
-    if (!ReadFile(hDevice, blk->signature, sizeof(LibSpecialDrive_Protective_MBR), &bytesRead, NULL) || bytesRead != sizeof(LibSpecialDrive_Protective_MBR))
+    if (!ReadFile(hDevice, blk->signature, sizeof(*blk->signature), &bytesRead, NULL) || bytesRead != sizeof(*blk->signature))
     {
         CloseHandle(hDevice);
         return false;
     }
 
-    memcpy(blk->signature->boot_code, &flag, sizeof(LibSpecialDrive_Flag));
-
+    memcpy(blk->signature->boot_code, &flag, sizeof(flag));
     DWORD bytesWritten;
-    BOOL success = WriteFile(hDevice, blk->signature, sizeof(LibSpecialDrive_Protective_MBR), &bytesWritten, NULL);
-
+    BOOL success = WriteFile(hDevice, blk->signature, sizeof(*blk->signature), &bytesWritten, NULL);
     CloseHandle(hDevice);
+
     LibSpecialDriverReload(ctx);
-    return (success && bytesWritten == sizeof(LibSpecialDrive_Protective_MBR));
+    return (success && bytesWritten == sizeof(*blk->signature));
 }
 
 bool LibSpecialDriveUnmark(LibSpecialDrive *ctx, int blockNumber)
 {
     if (!ctx || blockNumber < 0 || blockNumber >= ctx->specialBlockDeviceCount)
         return false;
-
     LibSpecialDrive_BlockDevice *blk = &ctx->specialBlockDevices[blockNumber];
     if (!blk->signature)
         return false;
@@ -288,7 +282,7 @@ bool LibSpecialDriveUnmark(LibSpecialDrive *ctx, int blockNumber)
         return false;
 
     DWORD bytesRead;
-    if (!ReadFile(hDevice, blk->signature, sizeof(LibSpecialDrive_Protective_MBR), &bytesRead, NULL) || bytesRead != sizeof(LibSpecialDrive_Protective_MBR))
+    if (!ReadFile(hDevice, blk->signature, sizeof(*blk->signature), &bytesRead, NULL) || bytesRead != sizeof(*blk->signature))
     {
         CloseHandle(hDevice);
         return false;
@@ -296,11 +290,26 @@ bool LibSpecialDriveUnmark(LibSpecialDrive *ctx, int blockNumber)
 
     memset(blk->signature->boot_code, 0, sizeof(LibSpecialDrive_Flag));
     DWORD bytesWritten;
-    BOOL success = WriteFile(hDevice, blk->signature, sizeof(LibSpecialDrive_Protective_MBR), &bytesWritten, NULL);
-
+    BOOL success = WriteFile(hDevice, blk->signature, sizeof(*blk->signature), &bytesWritten, NULL);
     CloseHandle(hDevice);
+
     LibSpecialDriverReload(ctx);
-    return (success && bytesWritten == sizeof(LibSpecialDrive_Protective_MBR));
+    return (success && bytesWritten == sizeof(*blk->signature));
+}
+
+BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
+{
+    switch (ul_reason_for_call)
+    {
+    case DLL_PROCESS_ATTACH:
+        DisableThreadLibraryCalls(hModule);
+        break;
+    case DLL_PROCESS_DETACH:
+    case DLL_THREAD_ATTACH:
+    case DLL_THREAD_DETACH:
+        break;
+    }
+    return TRUE;
 }
 
 #endif

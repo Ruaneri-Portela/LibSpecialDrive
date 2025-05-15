@@ -80,10 +80,10 @@ int main()
     LibSpecialDrive *lb = LibSpecialDriverGet();
     // Exibir resultados
     list(lb);
-    printf("%d\n\n", LibSpecialDriveMark(lb, 2));
-    list(lb);
-    printf("%d\n\n", LibSpecialDriveUnmark(lb, 0));
-    list(lb);
+    // printf("%d\n\n", LibSpecialDriveMark(lb, 2));
+    // list(lb);
+    // printf("%d\n\n", LibSpecialDriveUnmark(lb, 0));
+    // list(lb);
 
     LibSpecialDriverDestroy(&lb);
 
