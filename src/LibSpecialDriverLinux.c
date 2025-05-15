@@ -30,7 +30,7 @@ char *LibSpecialDriverPartitionPathLookup(const char *path, int partitionNumber)
     return strdup(partitionPath);
 }
 
-void LibSpecialDrivePartitionGetPathMount(struct LibSpecialDrive_Partition *part, enum LibSpecialDrive_PartitionType type)
+void LibSpecialDrivePartitionGetPathMount(LibSpecialDrive_Partition *part, enum LibSpecialDrive_PartitionType type)
 {
     (void)type;
     if (!part || !part->path)
@@ -53,7 +53,7 @@ void LibSpecialDrivePartitionGetPathMount(struct LibSpecialDrive_Partition *part
     endmntent(fp);
 }
 
-struct LibSpecialDrive_Partition *LibSpecialDriverGetPartition(struct LibSpecialDrive_BlockDevice *blk)
+LibSpecialDrive_Partition *LibSpecialDriverGetPartition(LibSpecialDrive_BlockDevice *blk)
 {
     if (!blk || !blk->path)
         return NULL;
@@ -100,7 +100,7 @@ struct LibSpecialDrive_Partition *LibSpecialDriverGetPartition(struct LibSpecial
     return blk->partitions;
 }
 
-struct LibSpecialDrive_BlockDevice *LibSpecialDriverGetBlock(const char *path)
+LibSpecialDrive_BlockDevice *LibSpecialDriverGetBlock(const char *path)
 {
     if (!path)
         return NULL;
@@ -126,7 +126,7 @@ struct LibSpecialDrive_BlockDevice *LibSpecialDriverGetBlock(const char *path)
         return NULL;
     }
 
-    struct LibSpecialDrive_BlockDevice *blk = malloc(sizeof(*blk));
+    LibSpecialDrive_BlockDevice *blk = malloc(sizeof(*blk));
     if (!blk)
     {
         close(fd);
@@ -159,9 +159,9 @@ struct LibSpecialDrive_BlockDevice *LibSpecialDriverGetBlock(const char *path)
     return blk;
 }
 
-struct LibSpecialDrive *LibSpecialDriverGet(void)
+LibSpecialDrive *LibSpecialDriverGet(void)
 {
-    struct LibSpecialDrive *ctx = calloc(1, sizeof(struct LibSpecialDrive));
+    LibSpecialDrive *ctx = calloc(1, sizeof(LibSpecialDrive));
 
     FILE *fp = fopen("/proc/partitions", "r");
     if (!fp)
@@ -188,7 +188,7 @@ struct LibSpecialDrive *LibSpecialDriverGet(void)
         char path[PATH_MAX];
         snprintf(path, sizeof(path), "/dev/%s", name);
 
-        struct LibSpecialDrive_BlockDevice *blk = LibSpecialDriverGetBlock(path);
+        LibSpecialDrive_BlockDevice *blk = LibSpecialDriverGetBlock(path);
         if (!blk)
             continue;
 
@@ -206,13 +206,13 @@ static char *LibSpecialDriveConvertRawPath(const char *diskPath)
     return strdup(diskPath); // no Linux, o caminho é o mesmo
 }
 
-bool LibSpecialDriveMark(struct LibSpecialDrive *ctx, int blockNumber)
+bool LibSpecialDriveMark(LibSpecialDrive *ctx, int blockNumber)
 {
     if (!ctx || blockNumber < 0 || blockNumber >= ctx->commonBlockDeviceCount)
         return false;
 
-    struct LibSpecialDrive_BlockDevice *blk = &ctx->commonBlockDevices[blockNumber];
-    struct LibSpecialFlag flag = {0xFF, LIBSPECIAL_MAGIC_STRING, {0}};
+    LibSpecialDrive_BlockDevice *blk = &ctx->commonBlockDevices[blockNumber];
+    LibSpecialDrive_Flag flag = {0xFF, LIBSPECIAL_MAGIC_STRING, {0}};
     uint8_t *uuid = LibSpecialDriverGenUUID();
 
     if (LibSpecialDriverIsSpecial(blk->signature))
@@ -243,12 +243,12 @@ bool LibSpecialDriveMark(struct LibSpecialDrive *ctx, int blockNumber)
     return (bytesWritten == sizeof(ProtectiveMBR));
 }
 
-bool LibSpecialDriveUnmark(struct LibSpecialDrive *ctx, int blockNumber)
+bool LibSpecialDriveUnmark(LibSpecialDrive *ctx, int blockNumber)
 {
     if (!ctx || blockNumber < 0 || blockNumber >= ctx->specialBlockDeviceCount)
         return false;
 
-    struct LibSpecialDrive_BlockDevice *blk = &ctx->specialBlockDevices[blockNumber];
+    LibSpecialDrive_BlockDevice *blk = &ctx->specialBlockDevices[blockNumber];
 
     int fd = open(blk->path, O_RDWR);
     if (fd < 0)

@@ -51,12 +51,12 @@ char *LibSpecialDriverGenUUIDString(uint8_t *uuid)
 
 // --- Verificação de assinatura especial ---
 
-struct LibSpecialFlag *LibSpecialDriverIsSpecial(ProtectiveMBR *ptr)
+LibSpecialDrive_Flag *LibSpecialDriverIsSpecial(ProtectiveMBR *ptr)
 {
     if (!ptr)
         return NULL;
 
-    struct LibSpecialFlag *flag = (struct LibSpecialFlag *)ptr->boot_code;
+    LibSpecialDrive_Flag *flag = (LibSpecialDrive_Flag *)ptr->boot_code;
 
     if (flag->hex != (char)0xFF)
         return NULL;
@@ -69,16 +69,16 @@ struct LibSpecialFlag *LibSpecialDriverIsSpecial(ProtectiveMBR *ptr)
 
 // --- Manipulação de blocos e partições ---
 
-bool LibSpecialDriverBlockAppend(struct LibSpecialDrive *driver, struct LibSpecialDrive_BlockDevice **blockDevice)
+bool LibSpecialDriverBlockAppend(LibSpecialDrive *driver, LibSpecialDrive_BlockDevice **blockDevice)
 {
     if (!driver || !blockDevice || !(*blockDevice)->signature)
         return false;
 
-    struct LibSpecialFlag *flag = LibSpecialDriverIsSpecial((*blockDevice)->signature);
-    struct LibSpecialDrive_BlockDevice **list = flag ? &driver->specialBlockDevices : &driver->commonBlockDevices;
+    LibSpecialDrive_Flag *flag = LibSpecialDriverIsSpecial((*blockDevice)->signature);
+    LibSpecialDrive_BlockDevice **list = flag ? &driver->specialBlockDevices : &driver->commonBlockDevices;
     size_t *count = flag ? &driver->specialBlockDeviceCount : &driver->commonBlockDeviceCount;
 
-    struct LibSpecialDrive_BlockDevice *newList = realloc(*list, (*count + 1) * sizeof(struct LibSpecialDrive_BlockDevice));
+    LibSpecialDrive_BlockDevice *newList = realloc(*list, (*count + 1) * sizeof(LibSpecialDrive_BlockDevice));
     if (!newList)
         return false;
 
@@ -92,7 +92,7 @@ bool LibSpecialDriverBlockAppend(struct LibSpecialDrive *driver, struct LibSpeci
     return true;
 }
 
-void LibSpecialDriverDestroyPartition(struct LibSpecialDrive_Partition *part)
+void LibSpecialDriverDestroyPartition(LibSpecialDrive_Partition *part)
 {
     if (part)
     {
@@ -101,7 +101,7 @@ void LibSpecialDriverDestroyPartition(struct LibSpecialDrive_Partition *part)
     }
 }
 
-void LibSpecialDriverDestroyBlock(struct LibSpecialDrive_BlockDevice *blk)
+void LibSpecialDriverDestroyBlock(LibSpecialDrive_BlockDevice *blk)
 {
     if (blk)
     {
@@ -114,7 +114,7 @@ void LibSpecialDriverDestroyBlock(struct LibSpecialDrive_BlockDevice *blk)
     }
 }
 
-void LibSpecialDriverMapperPartitionsMBR(struct LibSpecialDrive_BlockDevice *blk)
+void LibSpecialDriverMapperPartitionsMBR(LibSpecialDrive_BlockDevice *blk)
 {
     if (!blk)
         return;
@@ -125,8 +125,8 @@ void LibSpecialDriverMapperPartitionsMBR(struct LibSpecialDrive_BlockDevice *blk
         if (entry->type == 0x00)
             continue;
 
-        blk->partitions = realloc(blk->partitions, (blk->partitionCount + 1) * sizeof(struct LibSpecialDrive_Partition));
-        memset(&blk->partitions[blk->partitionCount], 0, sizeof(struct LibSpecialDrive_Partition));
+        blk->partitions = realloc(blk->partitions, (blk->partitionCount + 1) * sizeof(LibSpecialDrive_Partition));
+        memset(&blk->partitions[blk->partitionCount], 0, sizeof(LibSpecialDrive_Partition));
         blk->partitions[blk->partitionCount].path = LibSpecialDriverPartitionPathLookup(blk->path, blk->partitionCount);
         memcpy(&blk->partitions[blk->partitionCount].partitionMeta.mbr, entry, sizeof(MBR_Partition_Entry));
         LibSpecialDrivePartitionGetPathMount(&blk->partitions[blk->partitionCount],blk->type);
@@ -134,7 +134,7 @@ void LibSpecialDriverMapperPartitionsMBR(struct LibSpecialDrive_BlockDevice *blk
     }
 }
 
-void LibSpecialDriverMapperPartitionsGPT(LibSpeicalDrive_GPT_Header *header, uint8_t *partitionBuffer, struct LibSpecialDrive_BlockDevice *blk)
+void LibSpecialDriverMapperPartitionsGPT(LibSpeicalDrive_GPT_Header *header, uint8_t *partitionBuffer, LibSpecialDrive_BlockDevice *blk)
 {
     if (!header || !partitionBuffer || !blk)
         return;
@@ -155,8 +155,8 @@ void LibSpecialDriverMapperPartitionsGPT(LibSpeicalDrive_GPT_Header *header, uin
         if (isEmpty)
             continue;
 
-        blk->partitions = realloc(blk->partitions, (blk->partitionCount + 1) * sizeof(struct LibSpecialDrive_Partition));
-        memset(&blk->partitions[blk->partitionCount], 0, sizeof(struct LibSpecialDrive_Partition));
+        blk->partitions = realloc(blk->partitions, (blk->partitionCount + 1) * sizeof(LibSpecialDrive_Partition));
+        memset(&blk->partitions[blk->partitionCount], 0, sizeof(LibSpecialDrive_Partition));
         blk->partitions[blk->partitionCount].path = LibSpecialDriverPartitionPathLookup(blk->path, blk->partitionCount);
         memcpy(&blk->partitions[blk->partitionCount].partitionMeta.gpt, entry, sizeof(LibSpeicalDrive_GPT_Partition_Entry));
         LibSpecialDrivePartitionGetPathMount(&blk->partitions[blk->partitionCount],blk->type);
@@ -166,9 +166,9 @@ void LibSpecialDriverMapperPartitionsGPT(LibSpeicalDrive_GPT_Header *header, uin
 
 // --- Gerenciamento de contexto ---
 
-bool LibSpecialDriverReload(struct LibSpecialDrive *ctx)
+bool LibSpecialDriverReload(LibSpecialDrive *ctx)
 {
-    struct LibSpecialDrive *newCtx = LibSpecialDriverGet();
+    LibSpecialDrive *newCtx = LibSpecialDriverGet();
     if (!newCtx)
         return false;
 
@@ -192,12 +192,12 @@ bool LibSpecialDriverReload(struct LibSpecialDrive *ctx)
     return true;
 }
 
-void LibSpecialDriverDestroy(struct LibSpecialDrive **ctx)
+void LibSpecialDriverDestroy(LibSpecialDrive **ctx)
 {
     if (!ctx || !*ctx)
         return;
 
-    struct LibSpecialDrive *context = *ctx;
+    LibSpecialDrive *context = *ctx;
 
     if (context->commonBlockDevices)
         for (size_t i = 0; i < context->commonBlockDeviceCount; i++)

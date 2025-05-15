@@ -22,7 +22,7 @@ char *LibSpecialDriverPartitionPathLookup(const char *path, int partitionNumber)
     return (char *)path;
 }
 
-void LibSpecialDrivePartitionGetPathMount(struct LibSpecialDrive_Partition *part, enum LibSpecialDrive_PartitionType type)
+void LibSpecialDrivePartitionGetPathMount(LibSpecialDrive_Partition *part, enum LibSpecialDrive_PartitionType type)
 {
     if (!part || !part->path)
         return;
@@ -86,7 +86,7 @@ void LibSpecialDrivePartitionGetPathMount(struct LibSpecialDrive_Partition *part
     FindVolumeClose(hVol);
 }
 
-struct LibSpecialDrive_Partition *LibSpecialDriverGetPartition(struct LibSpecialDrive_BlockDevice *blk)
+LibSpecialDrive_Partition *LibSpecialDriverGetPartition(LibSpecialDrive_BlockDevice *blk)
 {
     if (!blk || !blk->path)
         return NULL;
@@ -138,7 +138,7 @@ struct LibSpecialDrive_Partition *LibSpecialDriverGetPartition(struct LibSpecial
     return blk->partitions;
 }
 
-struct LibSpecialDrive_BlockDevice *LibSpecialDriverGetBlock(const char *path)
+LibSpecialDrive_BlockDevice *LibSpecialDriverGetBlock(const char *path)
 {
     if (!path)
         return NULL;
@@ -159,7 +159,7 @@ struct LibSpecialDrive_BlockDevice *LibSpecialDriverGetBlock(const char *path)
     if (!DeviceIoControl(hDevice, IOCTL_DISK_GET_LENGTH_INFO, NULL, 0, &lenInfo, sizeof(lenInfo), &bytesRead, NULL))
         goto error;
 
-    struct LibSpecialDrive_BlockDevice *blk = calloc(1, sizeof(struct LibSpecialDrive_BlockDevice));
+    LibSpecialDrive_BlockDevice *blk = calloc(1, sizeof(LibSpecialDrive_BlockDevice));
     blk->size = lenInfo.Length.QuadPart;
     blk->path = strdup(path);
     blk->signature = MBR;
@@ -185,9 +185,9 @@ error:
     return NULL;
 }
 
-struct LibSpecialDrive *LibSpecialDriverGet(void)
+LibSpecialDrive *LibSpecialDriverGet(void)
 {
-    struct LibSpecialDrive *driver = calloc(1, sizeof(struct LibSpecialDrive));
+    LibSpecialDrive *driver = calloc(1, sizeof(LibSpecialDrive));
     if (!driver)
         return NULL;
 
@@ -196,7 +196,7 @@ struct LibSpecialDrive *LibSpecialDriverGet(void)
     for (size_t i = 0;; i++)
     {
         snprintf(path, sizeof(path), "\\\\.\\PhysicalDrive%zu", i);
-        struct LibSpecialDrive_BlockDevice *blk = LibSpecialDriverGetBlock(path);
+        LibSpecialDrive_BlockDevice *blk = LibSpecialDriverGetBlock(path);
         if (!blk)
         {
             if (failed++ > 8)
@@ -210,14 +210,14 @@ struct LibSpecialDrive *LibSpecialDriverGet(void)
     return driver;
 }
 
-bool LibSpecialDriveMark(struct LibSpecialDrive *ctx, int blockNumber)
+bool LibSpecialDriveMark(LibSpecialDrive *ctx, int blockNumber)
 {
     if (!ctx || blockNumber < 0 || blockNumber >= ctx->commonBlockDeviceCount)
         return false;
 
-    struct LibSpecialDrive_BlockDevice *blk = &ctx->commonBlockDevices[blockNumber];
+    LibSpecialDrive_BlockDevice *blk = &ctx->commonBlockDevices[blockNumber];
 
-    struct LibSpecialFlag flag = {0xFF, LIBSPECIAL_MAGIC_STRING, {0}};
+    LibSpecialDrive_Flag flag = {0xFF, LIBSPECIAL_MAGIC_STRING, {0}};
     uint8_t *uuid = LibSpecialDriverGenUUID();
 
     if (LibSpecialDriverIsSpecial(blk->signature))
@@ -230,7 +230,7 @@ bool LibSpecialDriveMark(struct LibSpecialDrive *ctx, int blockNumber)
     if (!mbr)
         return false;
     memcpy(mbr, blk->signature, sizeof(ProtectiveMBR));
-    memcpy(mbr->boot_code, &flag, sizeof(struct LibSpecialFlag));
+    memcpy(mbr->boot_code, &flag, sizeof(LibSpecialDrive_Flag));
 
     HANDLE hDevice = CreateFileA(blk->path, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
     if (hDevice == INVALID_HANDLE_VALUE)
@@ -244,12 +244,12 @@ bool LibSpecialDriveMark(struct LibSpecialDrive *ctx, int blockNumber)
     return (success && bytesWritten == sizeof(ProtectiveMBR));
 }
 
-bool LibSpecialDriveUnmark(struct LibSpecialDrive *ctx, int blockNumber)
+bool LibSpecialDriveUnmark(LibSpecialDrive *ctx, int blockNumber)
 {
     if (!ctx || blockNumber < 0 || blockNumber >= ctx->specialBlockDeviceCount)
         return false;
 
-    struct LibSpecialDrive_BlockDevice *blk = &ctx->specialBlockDevices[blockNumber];
+    LibSpecialDrive_BlockDevice *blk = &ctx->specialBlockDevices[blockNumber];
     if (!blk->signature)
         return false;
 

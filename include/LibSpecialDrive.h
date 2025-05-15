@@ -77,76 +77,76 @@ union LibSpecialDrive_PartitionMeta
     MBR_Partition_Entry mbr;
 };
 
-struct LibSpecialDrive_Partition
+typedef struct
 {
     const char *path;
     const char *mountPoint;
     union LibSpecialDrive_PartitionMeta partitionMeta;
-};
+} LibSpecialDrive_Partition;
 
-struct LibSpecialDrive_BlockDevice
+typedef struct
 {
     const char *path;
     int8_t partitionCount;
     enum LibSpecialDrive_PartitionType type;
-    struct LibSpecialDrive_Partition *partitions;
+    LibSpecialDrive_Partition *partitions;
     int64_t size;
     int8_t flags;
     ProtectiveMBR *signature;
-};
+} LibSpecialDrive_BlockDevice;
 
-struct LibSpecialDrive
+typedef struct
 {
-    struct LibSpecialDrive_BlockDevice *commonBlockDevices;
+    LibSpecialDrive_BlockDevice *commonBlockDevices;
     size_t commonBlockDeviceCount;
-    struct LibSpecialDrive_BlockDevice *specialBlockDevices;
+    LibSpecialDrive_BlockDevice *specialBlockDevices;
     size_t specialBlockDeviceCount;
-};
+} LibSpecialDrive;
 
-struct LibSpecialFlag
+typedef struct
 {
     char hex;
     char libspecialDriveName[22];
     uint8_t uuid[16];
     uint8_t version[4];
-};
+} LibSpecialDrive_Flag;
 
 #define LIBSPECIAL_MAGIC_STRING "LIBSPECIALDRIVE_DEVICE"
 
 // Universal
 
-struct LibSpecialFlag *LibSpecialDriverIsSpecial(ProtectiveMBR *ptr);
+LibSpecialDrive_Flag *LibSpecialDriverIsSpecial(ProtectiveMBR *ptr);
 
 uint8_t *LibSpecialDriverGenUUID(void);
 
 char *LibSpecialDriverGenUUIDString(uint8_t *uuid);
 
-bool LibSpecialDriverBlockAppend(struct LibSpecialDrive *driver, struct LibSpecialDrive_BlockDevice **blockDevice);
+bool LibSpecialDriverBlockAppend(LibSpecialDrive *driver, LibSpecialDrive_BlockDevice **blockDevice);
 
-void LibSpecialDriverDestroyPartition(struct LibSpecialDrive_Partition *part);
+void LibSpecialDriverDestroyPartition(LibSpecialDrive_Partition *part);
 
-void LibSpecialDriverDestroyBlock(struct LibSpecialDrive_BlockDevice *blk);
+void LibSpecialDriverDestroyBlock(LibSpecialDrive_BlockDevice *blk);
 
-void LibSpecialDriverMapperPartitionsMBR(struct LibSpecialDrive_BlockDevice *blk);
+void LibSpecialDriverMapperPartitionsMBR(LibSpecialDrive_BlockDevice *blk);
 
-void LibSpecialDriverMapperPartitionsGPT(LibSpeicalDrive_GPT_Header *header, uint8_t *partitionBuffer, struct LibSpecialDrive_BlockDevice *blk);
+void LibSpecialDriverMapperPartitionsGPT(LibSpeicalDrive_GPT_Header *header, uint8_t *partitionBuffer, LibSpecialDrive_BlockDevice *blk);
 
-bool LibSpecialDriverReload(struct LibSpecialDrive *ctx);
+bool LibSpecialDriverReload(LibSpecialDrive *ctx);
 
-void LibSpecialDriverDestroy(struct LibSpecialDrive **ctx);
+void LibSpecialDriverDestroy(LibSpecialDrive **ctx);
 
 // System Dependent Functions
 
 char *LibSpecialDriverPartitionPathLookup(const char *path, int partNumber);
 
-void LibSpecialDrivePartitionGetPathMount(struct LibSpecialDrive_Partition *part, enum LibSpecialDrive_PartitionType type);
+void LibSpecialDrivePartitionGetPathMount(LibSpecialDrive_Partition *part, enum LibSpecialDrive_PartitionType type);
 
-struct LibSpecialDrive_Partition *LibSpecialDriverGetPartition(struct LibSpecialDrive_BlockDevice *blk);
+LibSpecialDrive_Partition *LibSpecialDriverGetPartition(LibSpecialDrive_BlockDevice *blk);
 
-struct LibSpecialDrive_BlockDevice *LibSpecialDriverGetBlock(const char *path);
+LibSpecialDrive_BlockDevice *LibSpecialDriverGetBlock(const char *path);
 
-struct LibSpecialDrive *LibSpecialDriverGet(void);
+LibSpecialDrive *LibSpecialDriverGet(void);
 
-bool LibSpecialDriveMark(struct LibSpecialDrive *ctx, int blockNumber);
+bool LibSpecialDriveMark(LibSpecialDrive *ctx, int blockNumber);
 
-bool LibSpecialDriveUnmark(struct LibSpecialDrive *ctx, int blockNumber);
+bool LibSpecialDriveUnmark(LibSpecialDrive *ctx, int blockNumber);

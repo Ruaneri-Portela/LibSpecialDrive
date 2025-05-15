@@ -20,7 +20,7 @@ char *LibSpecialDriverPartitionPathLookup(const char *path, int partitionNumber)
     return strdup(partitionPath);
 }
 
-void LibSpecialDrivePartitionGetPathMount(struct LibSpecialDrive_Partition *part, enum LibSpecialDrive_PartitionType type)
+void LibSpecialDrivePartitionGetPathMount(LibSpecialDrive_Partition *part, enum LibSpecialDrive_PartitionType type)
 {
     (void)type;
     if (!part || !part->path)
@@ -44,7 +44,7 @@ void LibSpecialDrivePartitionGetPathMount(struct LibSpecialDrive_Partition *part
     }
 }
 
-struct LibSpecialDrive_Partition *LibSpecialDriverGetPartition(struct LibSpecialDrive_BlockDevice *blk)
+LibSpecialDrive_Partition *LibSpecialDriverGetPartition(LibSpecialDrive_BlockDevice *blk)
 {
     if (!blk || !blk->path)
         return NULL;
@@ -94,7 +94,7 @@ struct LibSpecialDrive_Partition *LibSpecialDriverGetPartition(struct LibSpecial
     return blk->partitions;
 }
 
-struct LibSpecialDrive_BlockDevice *LibSpecialDriverGetBlock(const char *path)
+LibSpecialDrive_BlockDevice *LibSpecialDriverGetBlock(const char *path)
 {
     if (!path)
         return NULL;
@@ -128,7 +128,7 @@ struct LibSpecialDrive_BlockDevice *LibSpecialDriverGetBlock(const char *path)
         return NULL;
     }
 
-    struct LibSpecialDrive_BlockDevice *blk = malloc(sizeof(struct LibSpecialDrive_BlockDevice));
+    LibSpecialDrive_BlockDevice *blk = malloc(sizeof(LibSpecialDrive_BlockDevice));
     if (!blk)
     {
         close(fd);
@@ -168,7 +168,7 @@ struct LibSpecialDrive_BlockDevice *LibSpecialDriverGetBlock(const char *path)
     return blk;
 }
 
-struct LibSpecialDrive *LibSpecialDriverGet(void)
+LibSpecialDrive *LibSpecialDriverGet(void)
 {
     CFMutableDictionaryRef matchingDict = IOServiceMatching(kIOMediaClass);
     if (!matchingDict)
@@ -188,7 +188,7 @@ struct LibSpecialDrive *LibSpecialDriverGet(void)
     }
 
     io_object_t media;
-    struct LibSpecialDrive *ctx = NULL;
+    LibSpecialDrive *ctx = NULL;
     while ((media = IOIteratorNext(iterator)))
     {
         CFStringRef bsdName = IORegistryEntryCreateCFProperty(media, CFSTR("BSD Name"), kCFAllocatorDefault, 0);
@@ -201,11 +201,11 @@ struct LibSpecialDrive *LibSpecialDriverGet(void)
             snprintf(path, sizeof(path), "/dev/%s", name);
             CFRelease(bsdName);
 
-            struct LibSpecialDrive_BlockDevice *blk = LibSpecialDriverGetBlock(path);
+            LibSpecialDrive_BlockDevice *blk = LibSpecialDriverGetBlock(path);
             if (blk)
             {
                 if (!ctx)
-                    ctx = calloc(1, sizeof(struct LibSpecialDrive));
+                    ctx = calloc(1, sizeof(LibSpecialDrive));
 
                 CFBooleanRef removable = (CFBooleanRef)IORegistryEntryCreateCFProperty(media, CFSTR("Removable"), kCFAllocatorDefault, 0);
                 if (removable)
@@ -266,14 +266,14 @@ static char *LibSpecialDriveConvertRawPath(const char *diskPath)
     return rawDiskPath;
 }
 
-bool LibSpecialDriveMark(struct LibSpecialDrive *ctx, int blockNumber)
+bool LibSpecialDriveMark(LibSpecialDrive *ctx, int blockNumber)
 {
     if (!ctx || blockNumber < 0 || blockNumber >= ctx->commonBlockDeviceCount)
         return false;
 
-    struct LibSpecialDrive_BlockDevice *blk = &ctx->commonBlockDevices[blockNumber];
+    LibSpecialDrive_BlockDevice *blk = &ctx->commonBlockDevices[blockNumber];
 
-    struct LibSpecialFlag flag = {0xFF, LIBSPECIAL_MAGIC_STRING, {0}};
+    LibSpecialDrive_Flag flag = {0xFF, LIBSPECIAL_MAGIC_STRING, {0}};
     uint8_t *uuid = LibSpecialDriverGenUUID();
 
     if (LibSpecialDriverIsSpecial(blk->signature))
@@ -286,7 +286,7 @@ bool LibSpecialDriveMark(struct LibSpecialDrive *ctx, int blockNumber)
     if (!mbr)
         return false;
     memcpy(mbr, blk->signature, sizeof(ProtectiveMBR));
-    memcpy(mbr->boot_code, &flag, sizeof(struct LibSpecialFlag));
+    memcpy(mbr->boot_code, &flag, sizeof(LibSpecialDrive_Flag));
 
     if (!LibSpecialDriverUmount(blk->path))
     {
@@ -323,12 +323,12 @@ bool LibSpecialDriveMark(struct LibSpecialDrive *ctx, int blockNumber)
     return (bytesWritten == sizeof(ProtectiveMBR));
 }
 
-bool LibSpecialDriveUnmark(struct LibSpecialDrive *ctx, int blockNumber)
+bool LibSpecialDriveUnmark(LibSpecialDrive *ctx, int blockNumber)
 {
     if (!ctx || blockNumber < 0 || blockNumber >= ctx->specialBlockDeviceCount)
         return false;
 
-    struct LibSpecialDrive_BlockDevice *blk = &ctx->specialBlockDevices[blockNumber];
+    LibSpecialDrive_BlockDevice *blk = &ctx->specialBlockDevices[blockNumber];
     if (!blk->signature)
         return false;
 

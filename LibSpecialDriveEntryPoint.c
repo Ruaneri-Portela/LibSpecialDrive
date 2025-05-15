@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void listPartition(struct LibSpecialDrive_BlockDevice *blk)
+void listPartition(LibSpecialDrive_BlockDevice *blk)
 {
     if (!blk || blk->partitionCount <= 0)
         return;
@@ -18,7 +18,7 @@ void listPartition(struct LibSpecialDrive_BlockDevice *blk)
 
     for (int i = 0; i < blk->partitionCount; i++)
     {
-        struct LibSpecialDrive_Partition *part = &blk->partitions[i];
+        LibSpecialDrive_Partition *part = &blk->partitions[i];
         printf("\tPartition %d\n\t\tMount Point: %s\n", i, (part->mountPoint ? part->mountPoint : "None"));
 
         if (blk->type == PARTITION_TYPE_GPT)
@@ -31,7 +31,7 @@ void listPartition(struct LibSpecialDrive_BlockDevice *blk)
     }
 }
 
-void list(struct LibSpecialDrive *lb)
+void list(LibSpecialDrive *lb)
 {
     if (!lb)
     {
@@ -40,7 +40,7 @@ void list(struct LibSpecialDrive *lb)
     if (lb->commonBlockDeviceCount >= 0)
         for (size_t i = 0; i < lb->commonBlockDeviceCount; i++)
         {
-            struct LibSpecialDrive_BlockDevice *bd = &lb->commonBlockDevices[i];
+            LibSpecialDrive_BlockDevice *bd = &lb->commonBlockDevices[i];
             printf(
                 "Common Device %zu: %s, Size: %lld bytes, Removable: %s\n",
                 i,
@@ -56,8 +56,8 @@ void list(struct LibSpecialDrive *lb)
     if (lb->specialBlockDeviceCount >= 0)
         for (size_t i = 0; i < lb->specialBlockDeviceCount; i++)
         {
-            struct LibSpecialDrive_BlockDevice *bd = &lb->specialBlockDevices[i];
-            struct LibSpecialFlag *flag = (struct LibSpecialFlag *)bd->signature->boot_code;
+            LibSpecialDrive_BlockDevice *bd = &lb->specialBlockDevices[i];
+            LibSpecialDrive_Flag *flag = (LibSpecialDrive_Flag *)bd->signature->boot_code;
             char *uuidStr = LibSpecialDriverGenUUIDString(flag->uuid);
             printf(
                 "Special Device %zu: %s, Size: %lld bytes, Removable: %s\n\tSpecial UUID:%s\n",
@@ -77,7 +77,7 @@ void list(struct LibSpecialDrive *lb)
 
 int main()
 {
-    struct LibSpecialDrive *lb = LibSpecialDriverGet();
+    LibSpecialDrive *lb = LibSpecialDriverGet();
     // Exibir resultados
     // list(lb);
     // printf("%d\n\n", LibSpecialDriveMark(lb, 0));
