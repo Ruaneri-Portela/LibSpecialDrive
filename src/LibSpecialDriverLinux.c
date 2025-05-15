@@ -63,15 +63,16 @@ LibSpecialDrive_Partition *LibSpecialDriverGetPartition(LibSpecialDrive_BlockDev
         return NULL;
 
     uint8_t buffer[SECTOR_SIZE];
-    ssize_t bytesRead = pread(fd, buffer, SECTOR_SIZE, GPT_HEADER_OFFSET);
-    if (bytesRead != SECTOR_SIZE)
+    ssize_t bytesRead;
+
+    if ((bytesRead = pread(fd, buffer, SECTOR_SIZE, GPT_HEADER_OFFSET)) != SECTOR_SIZE)
     {
         close(fd);
         return NULL;
     }
 
     LibSpeicalDrive_GPT_Header *header = (LibSpeicalDrive_GPT_Header *)buffer;
-    if (memcmp(&header->signature, GPT_SIGNATURE, 8) != 0)
+    if (bytesRead != SECTOR_SIZE || memcmp(&header->signature, GPT_SIGNATURE, 8) != 0)
     {
         blk->type = PARTITION_TYPE_MBR;
         LibSpecialDriverMapperPartitionsMBR(blk);
@@ -93,8 +94,10 @@ LibSpecialDrive_Partition *LibSpecialDriverGetPartition(LibSpecialDrive_BlockDev
         close(fd);
         return NULL;
     }
+
     blk->type = PARTITION_TYPE_GPT;
     LibSpecialDriverMapperPartitionsGPT(header, partitionBuffer, blk);
+
     free(partitionBuffer);
     close(fd);
     return blk->partitions;
@@ -143,10 +146,7 @@ LibSpecialDrive_BlockDevice *LibSpecialDriverGetBlock(const char *path)
         return NULL;
     }
 
-    unsigned long blockSize = 512;
-    unsigned long long blockCount = 0;
-
-    if (ioctl(fd, BLKSSZGET, &blockSize) < 0)
+    if (ioctl(fd, BLKSSZGET, &blk->lbaSize) < 0)
         perror("ioctl(BLKSSZGET)");
 
     if (ioctl(fd, BLKGETSIZE64, &blk->size) < 0)
@@ -239,8 +239,7 @@ bool LibSpecialDriveMark(LibSpecialDrive *ctx, int blockNumber)
     close(fd);
     free(mbr);
 
-    LibSpecialDriverReload(ctx);
-    return (bytesWritten == sizeof(ProtectiveMBR));
+    return (bytesWritten == sizeof(ProtectiveMBR)) && LibSpecialDriverReload(ctx);
 }
 
 bool LibSpecialDriveUnmark(LibSpecialDrive *ctx, int blockNumber)
@@ -276,8 +275,9 @@ bool LibSpecialDriveUnmark(LibSpecialDrive *ctx, int blockNumber)
 
     fsync(fd);
     close(fd);
-    LibSpecialDriverReload(ctx);
-    return true;
+
+    return LibSpecialDriverReload(ctx);
+    ;
 }
 
 #endif // __linux__

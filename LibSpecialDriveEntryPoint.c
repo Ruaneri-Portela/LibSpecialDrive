@@ -13,7 +13,7 @@ void listPartition(LibSpecialDrive_BlockDevice *blk)
     }
     else
     {
-        printf("\tMBT");
+        printf("\tMBR");
     }
 
     for (int i = 0; i < blk->partitionCount; i++)

@@ -98,10 +98,11 @@ typedef struct
 
 typedef struct
 {
-    const char *path;
-    int8_t partitionCount;
     enum LibSpecialDrive_PartitionType type;
     LibSpecialDrive_Partition *partitions;
+    int8_t partitionCount;
+    const char *path;
+    int64_t lbaSize;
     int64_t size;
     int8_t flags;
     ProtectiveMBR *signature;

@@ -129,7 +129,7 @@ void LibSpecialDriverMapperPartitionsMBR(LibSpecialDrive_BlockDevice *blk)
         memset(&blk->partitions[blk->partitionCount], 0, sizeof(LibSpecialDrive_Partition));
         blk->partitions[blk->partitionCount].path = LibSpecialDriverPartitionPathLookup(blk->path, blk->partitionCount);
         memcpy(&blk->partitions[blk->partitionCount].partitionMeta.mbr, entry, sizeof(MBR_Partition_Entry));
-        LibSpecialDrivePartitionGetPathMount(&blk->partitions[blk->partitionCount],blk->type);
+        LibSpecialDrivePartitionGetPathMount(&blk->partitions[blk->partitionCount], blk->type);
         blk->partitionCount++;
     }
 }
@@ -159,7 +159,7 @@ void LibSpecialDriverMapperPartitionsGPT(LibSpeicalDrive_GPT_Header *header, uin
         memset(&blk->partitions[blk->partitionCount], 0, sizeof(LibSpecialDrive_Partition));
         blk->partitions[blk->partitionCount].path = LibSpecialDriverPartitionPathLookup(blk->path, blk->partitionCount);
         memcpy(&blk->partitions[blk->partitionCount].partitionMeta.gpt, entry, sizeof(LibSpeicalDrive_GPT_Partition_Entry));
-        LibSpecialDrivePartitionGetPathMount(&blk->partitions[blk->partitionCount],blk->type);
+        LibSpecialDrivePartitionGetPathMount(&blk->partitions[blk->partitionCount], blk->type);
         blk->partitionCount++;
     }
 }
@@ -168,10 +168,6 @@ void LibSpecialDriverMapperPartitionsGPT(LibSpeicalDrive_GPT_Header *header, uin
 
 bool LibSpecialDriverReload(LibSpecialDrive *ctx)
 {
-    LibSpecialDrive *newCtx = LibSpecialDriverGet();
-    if (!newCtx)
-        return false;
-
     if (ctx->commonBlockDevices)
     {
         for (size_t i = 0; i < ctx->commonBlockDeviceCount; i++)
@@ -185,6 +181,10 @@ bool LibSpecialDriverReload(LibSpecialDrive *ctx)
             LibSpecialDriverDestroyBlock(&ctx->specialBlockDevices[i]);
         free(ctx->specialBlockDevices);
     }
+
+    LibSpecialDrive *newCtx = LibSpecialDriverGet();
+    if (!newCtx)
+        return false;
 
     *ctx = *newCtx;
     free(newCtx);

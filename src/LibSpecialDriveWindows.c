@@ -174,6 +174,23 @@ LibSpecialDrive_BlockDevice *LibSpecialDriverGetBlock(const char *path)
             blk->flags |= BLOCK_FLAG_IS_REMOVABLE;
     }
 
+    DISK_GEOMETRY geometry;
+
+    BOOL result = DeviceIoControl(
+        hDevice,
+        IOCTL_DISK_GET_DRIVE_GEOMETRY,
+        NULL, 0,
+        &geometry, sizeof(geometry),
+        &ReadFile,
+        NULL);
+
+    if (!result)
+    {
+        goto erro;
+    }
+
+    blk->lbaSize = geometry.BytesPerSector;
+
     CloseHandle(hDevice);
     LibSpecialDriverGetPartition(blk);
     return blk;

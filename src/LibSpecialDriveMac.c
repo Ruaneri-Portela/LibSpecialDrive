@@ -145,10 +145,9 @@ LibSpecialDrive_BlockDevice *LibSpecialDriverGetBlock(const char *path)
         return NULL;
     }
 
-    uint64_t blockSize = 0;
     uint64_t blockCount = 0;
 
-    if (ioctl(fd, DKIOCGETBLOCKSIZE, &blockSize) < 0)
+    if (ioctl(fd, DKIOCGETBLOCKSIZE, &blk->lbaSize) < 0)
     {
         perror("ioctl(DKIOCGETBLOCKSIZE)");
         // continue mesmo assim, talvez com valor padrão
@@ -161,7 +160,7 @@ LibSpecialDrive_BlockDevice *LibSpecialDriverGetBlock(const char *path)
 
     close(fd);
 
-    blk->size = blockSize * blockCount;
+    blk->size = blk->lbaSize * blockCount;
     blk->signature = MBR;
     blk->partitions = LibSpecialDriverGetPartition(blk);
 
