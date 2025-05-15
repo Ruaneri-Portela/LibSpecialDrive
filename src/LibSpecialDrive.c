@@ -131,6 +131,7 @@ void LibSpecialDriverMapperPartitionsMBR(LibSpecialDrive_BlockDevice *blk)
         memset(&blk->partitions[blk->partitionCount], 0, sizeof(LibSpecialDrive_Partition));
         blk->partitions[blk->partitionCount].path = LibSpecialDriverPartitionPathLookup(blk->path, blk->partitionCount);
         memcpy(&blk->partitions[blk->partitionCount].partitionMeta.mbr, entry, sizeof(LibSpecialDrive_MBR_Partition_Entry));
+        blk->partitions[blk->partitionCount].lbaSize = &blk->lbaSize;
         LibSpecialDrivePartitionGetPathMount(&blk->partitions[blk->partitionCount], blk->type);
         blk->partitionCount++;
     }
@@ -154,6 +155,7 @@ void LibSpecialDriverMapperPartitionsGPT(LibSpeicalDrive_GPT_Header *header, uin
         memset(&blk->partitions[blk->partitionCount], 0, sizeof(LibSpecialDrive_Partition));
         blk->partitions[blk->partitionCount].path = LibSpecialDriverPartitionPathLookup(blk->path, blk->partitionCount);
         memcpy(&blk->partitions[blk->partitionCount].partitionMeta.gpt, entry, sizeof(LibSpeicalDrive_GPT_Partition_Entry));
+        blk->partitions[blk->partitionCount].lbaSize = &blk->lbaSize;
         LibSpecialDrivePartitionGetPathMount(&blk->partitions[blk->partitionCount], blk->type);
         blk->partitionCount++;
     }

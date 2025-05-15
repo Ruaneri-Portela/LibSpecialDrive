@@ -9,11 +9,11 @@ void listPartition(LibSpecialDrive_BlockDevice *blk)
 
     if (blk->type == PARTITION_TYPE_GPT)
     {
-        printf("\tGPT");
+        printf("\tGPT\n");
     }
     else
     {
-        printf("\tMBR");
+        printf("\tMBR\n");
     }
 
     for (int i = 0; i < blk->partitionCount; i++)
@@ -80,7 +80,7 @@ int main()
     LibSpecialDrive *lb = LibSpecialDriverGet();
     // Exibir resultados
     list(lb);
-    printf("%d\n\n", LibSpecialDriveMark(lb, 0));
+    printf("%d\n\n", LibSpecialDriveMark(lb, 2));
     list(lb);
     printf("%d\n\n", LibSpecialDriveUnmark(lb, 0));
     list(lb);

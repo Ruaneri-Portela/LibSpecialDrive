@@ -89,6 +89,7 @@ typedef struct
 {
     const char *path;
     const char *mountPoint;
+    int64_t *lbaSize;
     union LibSpecialDrive_PartitionMeta partitionMeta;
 } LibSpecialDrive_Partition;
 
@@ -97,7 +98,7 @@ typedef struct
     enum LibSpecialDrive_PartitionType type;
     LibSpecialDrive_Partition *partitions;
     int8_t partitionCount;
-    const char *path;
+    char *path;
     int64_t lbaSize;
     int64_t size;
     int8_t flags;
@@ -144,7 +145,8 @@ void LibSpecialDrivePartitionGetPathMount(LibSpecialDrive_Partition *part, enum 
 #ifndef _WIN32
 LibSpecialDrive_Partition *LibSpecialDriverGetPartition(LibSpecialDrive_BlockDevice *blk, int fd);
 #else
-LibSpecialDrive_Partition *LibSpecialDriverGetPartition(LibSpecialDrive_BlockDevice *blk, HANDLE hFile);
+#include <windows.h>
+LibSpecialDrive_Partition *LibSpecialDriverGetPartition(LibSpecialDrive_BlockDevice *blk, HANDLE hDevice);
 #endif
 LibSpecialDrive_BlockDevice *LibSpecialDriverGetBlock(const char *path);
 LibSpecialDrive *LibSpecialDriverGet(void);

@@ -275,9 +275,6 @@ bool LibSpecialDriveMark(LibSpecialDrive *ctx, int blockNumber)
     LibSpecialDrive_Flag flag = {0xFF, LIBSPECIAL_MAGIC_STRING, {0}};
     uint8_t *uuid = LibSpecialDriverGenUUID();
 
-    if (LibSpecialDriverIsSpecial(blk->signature))
-        return false;
-
     memcpy(flag.uuid, uuid, 16);
     free(uuid);
 
