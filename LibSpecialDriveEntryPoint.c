@@ -7,12 +7,27 @@ void listPartition(struct LibSpecialDrive_BlockDevice *blk)
     if (!blk || blk->partitionCount <= 0)
         return;
 
+    if (blk->type == PARTITION_TYPE_GPT)
+    {
+        printf("\tGPT");
+    }
+    else
+    {
+        printf("\tMBT");
+    }
+
     for (int i = 0; i < blk->partitionCount; i++)
     {
         struct LibSpecialDrive_Partition *part = &blk->partitions[i];
-        char *uuidStr = LibSpecialDriverGenUUIDString(blk->partitions[i].partitionMeta.gpt.uniquePartitionGuid);
-        printf("\tPartition %d\n\t\tMount Point: %s\n\t\tUUID: %s\n\t\tVolume Path: %.48s\n", i, (part->mountPoint ? part->mountPoint : "None"), uuidStr, (part->path ? part->path : "None"));
-        free(uuidStr); // LibSpecialDriverGenUUIDString deve alocar memória para o UUID, então liberamos aqui
+        printf("\tPartition %d\n\t\tMount Point: %s\n", i, (part->mountPoint ? part->mountPoint : "None"));
+
+        if (blk->type == PARTITION_TYPE_GPT)
+        {
+            char *uuidStr = LibSpecialDriverGenUUIDString(blk->partitions[i].partitionMeta.gpt.uniquePartitionGuid);
+            printf("\t\tUUID: %sn", uuidStr);
+            free(uuidStr);
+        }
+        printf("\t\tVolume Path: %s\n", (part->path ? part->path : "None"));
     }
 }
 
@@ -64,8 +79,8 @@ int main()
 {
     struct LibSpecialDrive *lb = LibSpecialDriverGet();
     // Exibir resultados
-    //list(lb);
-    //printf("%d\n\n", LibSpecialDriveMark(lb, 0));
+    // list(lb);
+    // printf("%d\n\n", LibSpecialDriveMark(lb, 0));
     list(lb);
     printf("%d\n\n", LibSpecialDriveUnmark(lb, 0));
     list(lb);
