@@ -21,6 +21,17 @@ static bool IsMatchingExtent(const DISK_EXTENT *ext, DWORD diskNumber, LONGLONG 
            ext->StartingOffset.QuadPart == lbaStart * lbaSize;
 }
 
+uint64_t LibSpecialDriverDiretoryFreeSpaceLookup(const char *path)
+{
+    ULARGE_INTEGER freeBytesAvailable, totalBytes, totalFreeBytes;
+
+    if (GetDiskFreeSpaceExA(path, &freeBytesAvailable, &totalBytes, &totalFreeBytes))
+    {
+        return freeBytesAvailable.QuadPart;
+    }
+    return 0;
+}
+
 char *LibSpecialDriverPartitionPathLookup(const char *path, int partitionNumber)
 {
     (void)partitionNumber;
@@ -54,6 +65,9 @@ void LibSpecialDrivePartitionGetPathMount(LibSpecialDrive_Partition *part, enum 
         HANDLE hVolume = CreateFileA(volumeName, 0, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
         if (hVolume == INVALID_HANDLE_VALUE)
             continue;
+
+        if (len > 0 && volumeName[len - 1] == '\0')
+            volumeName[len - 1] = '\\';
 
         VOLUME_DISK_EXTENTS extents;
         DWORD bytesReturned;
@@ -183,7 +197,7 @@ bool LibSpecialDriveSeek(LibSpecialDrive_DeviceHandle device, int64_t offset)
     LARGE_INTEGER li;
     li.QuadPart = offset;
 
-    DWORD result = SetFilePointer(device, li.HighPart, NULL, FILE_BEGIN);
+    DWORD result = SetFilePointer(device, li.QuadPart, NULL, FILE_BEGIN);
     if (result == INVALID_SET_FILE_POINTER && GetLastError() != NO_ERROR)
     {
         fprintf(stderr, "Seek failed to offset %lld (Error: %lu)\n", offset, GetLastError());

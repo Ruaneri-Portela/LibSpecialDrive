@@ -1,20 +1,14 @@
 #include <LibSpecialDrive.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 void listPartition(LibSpecialDrive_BlockDevice *blk)
 {
     if (!blk || blk->partitionCount <= 0)
         return;
 
-    if (blk->type == PARTITION_TYPE_GPT)
-    {
-        printf("\tGPT\n");
-    }
-    else
-    {
-        printf("\tMBR\n");
-    }
+    printf("\t%s\n", blk->type == PARTITION_TYPE_GPT ? "GPT" : "MBR");
 
     for (int i = 0; i < blk->partitionCount; i++)
     {
@@ -23,69 +17,118 @@ void listPartition(LibSpecialDrive_BlockDevice *blk)
 
         if (blk->type == PARTITION_TYPE_GPT)
         {
-            char *uuidStr = LibSpecialDriverGenUUIDString(blk->partitions[i].partitionMeta.gpt.uniquePartitionGuid);
+            char *uuidStr = LibSpecialDriverGenUUIDString(part->partitionMeta.gpt.uniquePartitionGuid);
             printf("\t\tUUID: %s\n", uuidStr);
             free(uuidStr);
         }
-        printf("\t\tVolume Path: %s\n", (part->path ? part->path : "None"));
+
+        printf("\t\tVolume Path: %s\n\t\tFree Space: %lu bytes\n", (part->path ? part->path : "None"), part->freeSpace);
     }
 }
 
-void list(LibSpecialDrive *lb)
+void listBlock(LibSpecialDrive *lb, bool listPart, bool hiddenBlock)
 {
     if (!lb)
-    {
         return;
-    }
-    if (lb->commonBlockDeviceCount >= 0)
+
+    if (lb->commonBlockDeviceCount > 0)
+    {
         for (size_t i = 0; i < lb->commonBlockDeviceCount; i++)
         {
             LibSpecialDrive_BlockDevice *bd = &lb->commonBlockDevices[i];
-            printf(
-                "Common Device %zu: %s, Size: %lld bytes, Removable: %s\n",
-                i,
-                bd->path,
-                bd->size,
-                (bd->flags & BLOCK_FLAG_IS_REMOVABLE) ? "Yes" : "No");
-            listPartition(bd);
+            if (!hiddenBlock)
+                printf("Common Device %zu: %s, Size: %lld bytes, Removable: %s\n",
+                       i, bd->path, bd->size,
+                       (bd->flags & BLOCK_FLAG_IS_REMOVABLE) ? "Yes" : "No");
+
+            if (listPart)
+                listPartition(bd);
         }
-    else
-    {
-        printf("No common block devices found.\n");
     }
-    if (lb->specialBlockDeviceCount >= 0)
+
+    if (lb->specialBlockDeviceCount > 0)
+    {
         for (size_t i = 0; i < lb->specialBlockDeviceCount; i++)
         {
             LibSpecialDrive_BlockDevice *bd = &lb->specialBlockDevices[i];
             LibSpecialDrive_Flag *flag = (LibSpecialDrive_Flag *)bd->signature->boot_code;
             char *uuidStr = LibSpecialDriverGenUUIDString(flag->uuid);
-            printf(
-                "Special Device %zu: %s, Size: %lld bytes, Removable: %s\n\tSpecial UUID:%s\n",
-                i,
-                bd->path,
-                bd->size,
-                (bd->flags & BLOCK_FLAG_IS_REMOVABLE) ? "Yes" : "No",
-                uuidStr);
-            listPartition(bd);
-            free(uuidStr); // LibSpecialDriverGenUUIDString deve alocar memória para o UUID, então liberamos aqui
+
+            if (!hiddenBlock)
+                printf("Special Device %zu: %s, Size: %lld bytes, Removable: %s\n\tSpecial UUID:%s\n",
+                       i, bd->path, bd->size,
+                       (bd->flags & BLOCK_FLAG_IS_REMOVABLE) ? "Yes" : "No", uuidStr);
+
+            if (listPart)
+                listPartition(bd);
+
+            free(uuidStr);
         }
-    else
-    {
-        printf("No special block devices found.\n");
     }
 }
 
-int main()
+void printHelp(const char *progName)
 {
+    printf("Uso: %s [opções]\n", progName);
+    printf("Opções:\n");
+    printf("  -a             Listar tudo");
+    printf("  -b             Listar apenas blocos\n");
+    printf("  -p             Listar apenas partições\n");
+    printf("  -m <id>        Marcar bloco comum com índice <id> como especial\n");
+    printf("  -u <id>        Desmarcar bloco especial com índice <id>\n");
+    printf("  -h             Mostrar esta ajuda\n");
+}
+
+int main(int argc, const char *argv[])
+{
+    if (argc == 1)
+    {
+        printHelp(argv[0]);
+        return 0;
+    }
+
     LibSpecialDrive *lb = LibSpecialDriverGet();
-    // Exibir resultados
-    list(lb);
-    printf("%d\n\n", LibSpecialDriveMark(lb, 0));
-    list(lb);
-    printf("%d\n\n", LibSpecialDriveUnmark(lb, 0));
-    list(lb);
+
+    for (int i = 1; i < argc; i++)
+    {
+        if (strcmp(argv[i], "-a") == 0)
+        {
+            listBlock(lb, true, false);
+        }
+        else if (strcmp(argv[i], "-b") == 0)
+        {
+            listBlock(lb, false, false);
+        }
+        else if (strcmp(argv[i], "-p") == 0)
+        {
+            listBlock(lb, true, true); // apenas partições, ocultar blocos
+        }
+        else if (strcmp(argv[i], "-m") == 0 && i + 1 < argc)
+        {
+            int id = atoi(argv[++i]);
+            int result = LibSpecialDriveMark(lb, id);
+            printf("Marca: %s\n", result == 0 ? "Sucesso" : "Falha");
+            listBlock(lb, true, false);
+        }
+        else if (strcmp(argv[i], "-u") == 0 && i + 1 < argc)
+        {
+            int id = atoi(argv[++i]);
+            int result = LibSpecialDriveUnmark(lb, id);
+            printf("Desmarca: %s\n", result == 0 ? "Sucesso" : "Falha");
+            listBlock(lb, true, false);
+        }
+        else if (strcmp(argv[i], "-h") == 0)
+        {
+            printHelp(argv[0]);
+        }
+        else
+        {
+            printf("Opção inválida: %s\n", argv[i]);
+            printHelp(argv[0]);
+            break;
+        }
+    }
 
     LibSpecialDriverDestroy(&lb);
-
     return 0;
 }

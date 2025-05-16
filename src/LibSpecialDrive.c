@@ -130,6 +130,7 @@ void LibSpecialDriverMapperPartitionsMBR(LibSpecialDrive_BlockDevice *blk)
         memcpy(&part->partitionMeta.mbr, entry, sizeof(*entry));
         part->lbaSize = &blk->lbaSize;
         LibSpecialDrivePartitionGetPathMount(part, blk->type);
+        part->freeSpace = LibSpecialDriverDiretoryFreeSpaceLookup(part->path);
         blk->partitionCount++;
     }
 }
@@ -152,6 +153,7 @@ void LibSpecialDriverMapperPartitionsGPT(LibSpeicalDrive_GPT_Header *hdr, uint8_
         memcpy(&part->partitionMeta.gpt, entry, sizeof(*entry));
         part->lbaSize = &blk->lbaSize;
         LibSpecialDrivePartitionGetPathMount(part, blk->type);
+        part->freeSpace = LibSpecialDriverDiretoryFreeSpaceLookup(part->path);
         blk->partitionCount++;
     }
 }
@@ -324,9 +326,9 @@ bool LibSpecialDriveMark(LibSpecialDrive *ctx, int idx)
     }
 
     memcpy(blk->signature->boot_code, &flag, sizeof(LibSpecialDrive_Flag));
-    int64_t written = LibSpecialDriveWrite(device, sizeof(LibSpecialDrive_Flag), (uint8_t *)blk->signature);
+    int64_t written = LibSpecialDriveWrite(device, sizeof(*blk->signature), (uint8_t *)blk->signature);
     LibSpecialDriveCloseDevice(device);
-    return (written == sizeof(LibSpecialDrive_Flag)) && LibSpecialDriverReload(ctx);
+    return (written == sizeof(*blk->signature)) && LibSpecialDriverReload(ctx);
 }
 
 bool LibSpecialDriveUnmark(LibSpecialDrive *ctx, int idx)

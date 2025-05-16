@@ -90,6 +90,7 @@ typedef struct
     char *path;
     char *mountPoint;
     uint32_t *lbaSize;
+    uint64_t freeSpace;
     union LibSpecialDrive_PartitionMeta partitionMeta;
 } LibSpecialDrive_Partition;
 
@@ -162,6 +163,7 @@ LibSpecialDrive *LibSpecialDriverGet(void);
 // =====================================================================================
 // Funções de Sistema Dependente
 // =====================================================================================
+uint64_t LibSpecialDriverDiretoryFreeSpaceLookup(const char *mountPoint);
 char *LibSpecialDriverPartitionPathLookup(const char *path, int partNumber);
 void LibSpecialDrivePartitionGetPathMount(LibSpecialDrive_Partition *part, enum LibSpecialDrive_PartitionType type);
 bool LibSpecialDriveLookUpSizes(LibSpecialDrive_DeviceHandle device, LibSpecialDrive_BlockDevice *blk);
