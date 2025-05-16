@@ -39,6 +39,6 @@ endif()
 
 # Executavel de teste
 
-add_executable(SpecialDriveMain LibSpecialDriveEntryPoint.c)
-target_link_libraries(SpecialDriveMain LibSpecialDrive)
+add_executable(SpecialDriveMain SpecialDriveMain.c)
+target_link_libraries(SpecialDriveMain SpecialDrive)
 target_include_directories(SpecialDriveMain PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
