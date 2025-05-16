@@ -11,10 +11,26 @@
 #include <sys/mount.h>
 #include <sys/file.h>
 #include <sys/stat.h>
+#include <sys/statvfs.h>
 #include <mntent.h>
 #include <limits.h>
 #include <LibSpecialDrive.h>
 #include <ctype.h>
+
+void LibSpecialDriverDiretoryFreeSpaceLookup(LibSpecialDrive_Partition *part)
+{
+    if (!part && !part->mountPoint)
+        return;
+    struct statvfs stat;
+
+    if (statvfs(part->mountPoint, &stat) != 0)
+    {
+        part->freeSpace = 0;
+    }
+
+    unsigned long block_size = stat.f_frsize;
+    part->freeSpace = stat.f_bavail * block_size;
+}
 
 char *LibSpecialDriverPartitionPathLookup(const char *path, int partitionNumber)
 {

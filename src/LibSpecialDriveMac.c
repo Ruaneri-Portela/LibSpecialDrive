@@ -10,10 +10,26 @@
 #include <stdbool.h>
 #include <sys/disk.h>
 #include <sys/mount.h>
+#include <sys/statvfs.h>
 #include <IOKit/IOKitLib.h>
 #include <IOKit/storage/IOMedia.h>
 #include <CoreFoundation/CoreFoundation.h>
 #include <LibSpecialDrive.h>
+
+void LibSpecialDriverDiretoryFreeSpaceLookup(LibSpecialDrive_Partition *part)
+{
+    if (!part && !part->mountPoint)
+        return;
+    struct statvfs stat;
+
+    if (statvfs(part->mountPoint, &stat) != 0)
+    {
+        part->freeSpace = 0;
+    }
+
+    unsigned long block_size = stat.f_frsize;
+    part->freeSpace = stat.f_bavail * block_size;
+}
 
 // Cria caminho para uma partição: ex. "/dev/disk2" + 1 => "/dev/disk2s1"
 char *LibSpecialDriverPartitionPathLookup(const char *path, int partitionNumber)
