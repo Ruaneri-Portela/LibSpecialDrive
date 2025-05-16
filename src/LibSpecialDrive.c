@@ -57,7 +57,7 @@ LibSpecialDrive_Flag *LibSpecialDriverIsSpecial(LibSpecialDrive_Protective_MBR *
 
     LibSpecialDrive_Flag *flag = (LibSpecialDrive_Flag *)mbr->boot_code;
 
-    if (flag->hex != (char)0xFF)
+    if (flag->hex != 0xFF)
         return NULL;
 
     if (strncmp(flag->libspecialDriveName, LIBSPECIAL_MAGIC_STRING, sizeof(flag->libspecialDriveName)) == 0)

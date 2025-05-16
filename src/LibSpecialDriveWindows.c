@@ -15,7 +15,7 @@ static int ExtractDiskNumber(const char *path)
     return (*pos) ? atoi(pos) : -1;
 }
 
-static bool IsMatchingExtent(const DISK_EXTENT *ext, int diskNumber, LONGLONG lbaStart, DWORD lbaSize)
+static bool IsMatchingExtent(const DISK_EXTENT *ext, DWORD diskNumber, LONGLONG lbaStart, DWORD lbaSize)
 {
     return ext->DiskNumber == diskNumber &&
            ext->StartingOffset.QuadPart == lbaStart * lbaSize;
@@ -61,13 +61,13 @@ void LibSpecialDrivePartitionGetPathMount(LibSpecialDrive_Partition *part, enum 
                             NULL, 0, &extents, sizeof(extents), &bytesReturned, NULL))
         {
 
-            LONGLONG lbaStart = (type == PARTITION_TYPE_GPT)
-                                    ? part->partitionMeta.gpt.startingLba
-                                    : part->partitionMeta.mbr.lbaStart;
+            LONGLONG lbaStart = (LONGLONG)((type == PARTITION_TYPE_GPT)
+                                               ? part->partitionMeta.gpt.startingLba
+                                               : part->partitionMeta.mbr.lbaStart);
 
             for (DWORD i = 0; i < extents.NumberOfDiskExtents; ++i)
             {
-                if (IsMatchingExtent(&extents.Extents[i], diskNumber, lbaStart, *part->lbaSize))
+                if (IsMatchingExtent(&extents.Extents[i], (DWORD)diskNumber, lbaStart, *part->lbaSize))
                 {
                     char mountPaths[MAX_PATH] = {0};
                     DWORD pathLen = 0;
@@ -105,14 +105,14 @@ bool LibSpecialDriveLookUpSizes(LibSpecialDrive_DeviceHandle device, LibSpecialD
                          &geometry, sizeof(geometry), NULL, NULL))
         return false;
 
-    blk->size = lenInfo.Length.QuadPart;
+    blk->size = (uint64_t)lenInfo.Length.QuadPart;
     blk->lbaSize = geometry.BytesPerSector;
     return true;
 }
 
 bool LibSpecialDriveLookUpIsRemovable(LibSpecialDrive_DeviceHandle device, LibSpecialDrive_BlockDevice *blk)
 {
-    STORAGE_PROPERTY_QUERY query = {StorageDeviceProperty, PropertyStandardQuery};
+    STORAGE_PROPERTY_QUERY query = {StorageDeviceProperty, PropertyStandardQuery, {0}};
     BYTE buffer[1024] = {0};
 
     if (DeviceIoControl(device, IOCTL_STORAGE_QUERY_PROPERTY, &query, sizeof(query),
@@ -183,7 +183,7 @@ bool LibSpecialDriveSeek(LibSpecialDrive_DeviceHandle device, int64_t offset)
     LARGE_INTEGER li;
     li.QuadPart = offset;
 
-    DWORD result = SetFilePointer(device, li.LowPart, &li.HighPart, FILE_BEGIN);
+    DWORD result = SetFilePointer(device, li.HighPart, NULL, FILE_BEGIN);
     if (result == INVALID_SET_FILE_POINTER && GetLastError() != NO_ERROR)
     {
         fprintf(stderr, "Seek failed to offset %lld (Error: %lu)\n", offset, GetLastError());
