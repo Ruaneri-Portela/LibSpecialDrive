@@ -28,6 +28,7 @@ void LibSpecialDriverDiretoryFreeSpaceLookup(LibSpecialDrive_Partition *part)
     if (GetDiskFreeSpaceExA(part->path, &freeBytesAvailable, &totalBytes, &totalFreeBytes))
     {
         part->freeSpace = freeBytesAvailable.QuadPart;
+        return;
     }
     part->freeSpace = 0;
 }
