@@ -23,7 +23,7 @@ void LibSpecialDriverGenUUID(uint8_t *uuid)
     }
 
     for (size_t i = 0; i < 16; i++)
-        uuid[i] = rand() % 256;
+        uuid[i] = (uint8_t)(rand() % 256);
 
     uuid[6] = (uuid[6] & 0x0F) | 0x40; // UUIDv4
     uuid[8] = (uuid[8] & 0x3F) | 0x80; // Variante
@@ -123,7 +123,7 @@ void LibSpecialDriverMapperPartitionsMBR(LibSpecialDrive_BlockDevice *blk)
         if (entry->type == 0x00)
             continue;
 
-        blk->partitions = realloc(blk->partitions, (blk->partitionCount + 1) * sizeof(*blk->partitions));
+        blk->partitions = realloc(blk->partitions, ((size_t)blk->partitionCount + 1) * sizeof(*blk->partitions));
         LibSpecialDrive_Partition *part = &blk->partitions[blk->partitionCount];
         memset(part, 0, sizeof(*part));
         part->path = LibSpecialDriverPartitionPathLookup(blk->path, blk->partitionCount);
@@ -145,7 +145,7 @@ void LibSpecialDriverMapperPartitionsGPT(LibSpeicalDrive_GPT_Header *hdr, uint8_
         if (memcmp(entry->partitionTypeGuid, zeroGuid, 16) == 0)
             continue;
 
-        blk->partitions = realloc(blk->partitions, (blk->partitionCount + 1) * sizeof(*blk->partitions));
+        blk->partitions = realloc(blk->partitions, ((size_t)blk->partitionCount + 1) * sizeof(*blk->partitions));
         LibSpecialDrive_Partition *part = &blk->partitions[blk->partitionCount];
         memset(part, 0, sizeof(*part));
         part->path = LibSpecialDriverPartitionPathLookup(blk->path, blk->partitionCount);
@@ -224,14 +224,14 @@ LibSpecialDrive_Partition *LibSpecialDriverGetPartition(LibSpecialDrive_BlockDev
     }
 
     int64_t tableSize = header->numPartitionEntries * header->sizeOfPartitionEntry;
-    uint8_t *partitionTable = malloc(tableSize);
+    uint8_t *partitionTable = malloc((size_t)tableSize);
     if (!partitionTable)
     {
         free(header);
         return NULL;
     }
 
-    if (!LibSpecialDriveSeek(device, header->partitionEntriesLba * blk->lbaSize) ||
+    if (!LibSpecialDriveSeek(device, (int64_t)(header->partitionEntriesLba * blk->lbaSize)) ||
         LibSpecialDriveRead(device, tableSize, partitionTable) < 0)
     {
         free(header);
@@ -300,11 +300,11 @@ error_device:
 
 bool LibSpecialDriveMark(LibSpecialDrive *ctx, int idx)
 {
-    if (!ctx || idx < 0 || idx >= ctx->commonBlockDeviceCount)
+    if (!ctx || idx < 0 || (size_t)idx >= ctx->commonBlockDeviceCount)
         return false;
 
     LibSpecialDrive_BlockDevice *blk = &ctx->commonBlockDevices[idx];
-    LibSpecialDrive_Flag flag = {0xFF, LIBSPECIAL_MAGIC_STRING, {0}};
+    LibSpecialDrive_Flag flag = LIBSPECIAL_FLAG;
     LibSpecialDriverGenUUID((uint8_t *)&flag.uuid);
 
     LibSpecialDrive_DeviceHandle device = LibSpecialDriveOpenDevice(blk->path, DEVICE_FLAG_READ | DEVICE_FLAG_WRITE);
@@ -331,7 +331,7 @@ bool LibSpecialDriveMark(LibSpecialDrive *ctx, int idx)
 
 bool LibSpecialDriveUnmark(LibSpecialDrive *ctx, int idx)
 {
-    if (!ctx || idx < 0 || idx >= ctx->specialBlockDeviceCount)
+    if (!ctx || idx < 0 || (size_t)idx >= ctx->specialBlockDeviceCount)
         return false;
 
     LibSpecialDrive_BlockDevice *blk = &ctx->specialBlockDevices[idx];

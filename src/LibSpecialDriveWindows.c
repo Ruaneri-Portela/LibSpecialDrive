@@ -216,4 +216,7 @@ void LibSpecialDriveCloseDevice(LibSpecialDrive_DeviceHandle device)
         fprintf(stderr, "CloseHandle failed (Error: %lu)\n", GetLastError());
     }
 }
+#else
+#define LIBSPECIALDRIVEMWIN_C_EMPTY
+void LibSpecialDriveWIN_dummy(void) {}
 #endif

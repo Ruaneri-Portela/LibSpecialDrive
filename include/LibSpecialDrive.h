@@ -89,7 +89,7 @@ typedef struct
 {
     char *path;
     char *mountPoint;
-    int64_t *lbaSize;
+    uint32_t *lbaSize;
     union LibSpecialDrive_PartitionMeta partitionMeta;
 } LibSpecialDrive_Partition;
 
@@ -97,11 +97,11 @@ typedef struct
 {
     enum LibSpecialDrive_PartitionType type;
     LibSpecialDrive_Partition *partitions;
+    uint32_t lbaSize;
+    uint64_t size;
     int8_t partitionCount;
-    char *path;
-    int64_t lbaSize;
-    int64_t size;
     int8_t flags;
+    char *path;
     LibSpecialDrive_Protective_MBR *signature;
 } LibSpecialDrive_BlockDevice;
 
@@ -115,11 +115,11 @@ typedef struct
 
 typedef struct
 {
-    char hex;
+    uint8_t hex;
     char libspecialDriveName[22];
     uint8_t uuid[16];
     uint8_t version[4];
-} LibSpecialDrive_Flag;
+} __attribute__((packed)) LibSpecialDrive_Flag;
 
 #ifndef _WIN32
 typedef int LibSpecialDrive_DeviceHandle;
@@ -137,6 +137,8 @@ enum LibSpecialDrive_DeviceHandle_Flags
 };
 
 #define LIBSPECIAL_MAGIC_STRING "LIBSPECIALDRIVE_DEVICE"
+
+#define LIBSPECIAL_FLAG {0xFF, LIBSPECIAL_MAGIC_STRING, {0}, {0, 0, 0, 1}}
 
 // =====================================================================================
 // Funções Universais da Biblioteca
@@ -167,5 +169,5 @@ bool LibSpecialDriveLookUpIsRemovable(LibSpecialDrive_DeviceHandle device, LibSp
 LibSpecialDrive_DeviceHandle LibSpecialDriveOpenDevice(const char *path, enum LibSpecialDrive_DeviceHandle_Flags flags);
 bool LibSpecialDriveSeek(LibSpecialDrive_DeviceHandle device, int64_t padding);
 int64_t LibSpecialDriveRead(LibSpecialDrive_DeviceHandle device, int64_t len, uint8_t *target);
-int64_t LibSpecialDriveWrite(LibSpecialDrive_DeviceHandle device, int64_t len,const uint8_t *soruce);
+int64_t LibSpecialDriveWrite(LibSpecialDrive_DeviceHandle device, int64_t len, const uint8_t *soruce);
 void LibSpecialDriveCloseDevice(LibSpecialDrive_DeviceHandle device);

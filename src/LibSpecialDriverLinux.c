@@ -25,7 +25,7 @@ char *LibSpecialDriverPartitionPathLookup(const char *path, int partitionNumber)
     snprintf(partitionPath, sizeof(partitionPath), "%s%d", path, partitionNumber + 1);
 
     int fd = open(partitionPath, O_RDONLY);
-    if (!fd < 0)
+    if (!(fd < 0))
     {
         close(fd);
         return strdup(partitionPath);
@@ -191,5 +191,7 @@ void LibSpecialDriveCloseDevice(LibSpecialDrive_DeviceHandle device)
     if (device >= 0)
         close(device);
 }
-
+#else
+#define LIBSPECIALDRIVEMLINUX_C_EMPTY
+void LibSpecialDriveLINUX_dummy(void) {}
 #endif // __linux__

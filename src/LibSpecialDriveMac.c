@@ -231,5 +231,7 @@ LibSpecialDrive *LibSpecialDriverGet(void)
     IOObjectRelease(iterator);
     return ctx;
 }
-
+#else
+#define LIBSPECIALDRIVEMAC_C_EMPTY
+void LibSpecialDriveMAC_dummy(void) {}
 #endif // __APPLE__
