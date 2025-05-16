@@ -163,7 +163,7 @@ LibSpecialDrive *LibSpecialDriverGet(void);
 // =====================================================================================
 // Funções de Sistema Dependente
 // =====================================================================================
-uint64_t LibSpecialDriverDiretoryFreeSpaceLookup(const char *mountPoint);
+void LibSpecialDriverDiretoryFreeSpaceLookup(LibSpecialDrive_Partition *part);
 char *LibSpecialDriverPartitionPathLookup(const char *path, int partNumber);
 void LibSpecialDrivePartitionGetPathMount(LibSpecialDrive_Partition *part, enum LibSpecialDrive_PartitionType type);
 bool LibSpecialDriveLookUpSizes(LibSpecialDrive_DeviceHandle device, LibSpecialDrive_BlockDevice *blk);

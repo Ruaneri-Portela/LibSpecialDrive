@@ -21,15 +21,15 @@ static bool IsMatchingExtent(const DISK_EXTENT *ext, DWORD diskNumber, LONGLONG 
            ext->StartingOffset.QuadPart == lbaStart * lbaSize;
 }
 
-uint64_t LibSpecialDriverDiretoryFreeSpaceLookup(const char *path)
+void LibSpecialDriverDiretoryFreeSpaceLookup(LibSpecialDrive_Partition *part)
 {
     ULARGE_INTEGER freeBytesAvailable, totalBytes, totalFreeBytes;
 
-    if (GetDiskFreeSpaceExA(path, &freeBytesAvailable, &totalBytes, &totalFreeBytes))
+    if (GetDiskFreeSpaceExA(part->path, &freeBytesAvailable, &totalBytes, &totalFreeBytes))
     {
-        return freeBytesAvailable.QuadPart;
+        part->freeSpace = freeBytesAvailable.QuadPart;
     }
-    return 0;
+    part->freeSpace = 0;
 }
 
 char *LibSpecialDriverPartitionPathLookup(const char *path, int partitionNumber)

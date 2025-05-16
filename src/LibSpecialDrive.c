@@ -130,7 +130,7 @@ void LibSpecialDriverMapperPartitionsMBR(LibSpecialDrive_BlockDevice *blk)
         memcpy(&part->partitionMeta.mbr, entry, sizeof(*entry));
         part->lbaSize = &blk->lbaSize;
         LibSpecialDrivePartitionGetPathMount(part, blk->type);
-        part->freeSpace = LibSpecialDriverDiretoryFreeSpaceLookup(part->path);
+        LibSpecialDriverDiretoryFreeSpaceLookup(part);
         blk->partitionCount++;
     }
 }
@@ -153,7 +153,7 @@ void LibSpecialDriverMapperPartitionsGPT(LibSpeicalDrive_GPT_Header *hdr, uint8_
         memcpy(&part->partitionMeta.gpt, entry, sizeof(*entry));
         part->lbaSize = &blk->lbaSize;
         LibSpecialDrivePartitionGetPathMount(part, blk->type);
-        part->freeSpace = LibSpecialDriverDiretoryFreeSpaceLookup(part->path);
+        LibSpecialDriverDiretoryFreeSpaceLookup(part);
         blk->partitionCount++;
     }
 }
