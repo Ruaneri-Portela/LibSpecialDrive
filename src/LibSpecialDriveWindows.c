@@ -240,14 +240,14 @@ LibSpecialDrive *LibSpecialDriverGet(void)
     return driver;
 }
 
-bool LibSpecialDriveMark(LibSpecialDrive *ctx, int blockNumber)
+bool LibSpecialDriveMark(LibSpecialDrive *ctx, size_t blockNumber)
 {
     if (!ctx || blockNumber < 0 || blockNumber >= ctx->commonBlockDeviceCount)
         return false;
 
     LibSpecialDrive_BlockDevice *blk = &ctx->commonBlockDevices[blockNumber];
 
-    LibSpecialDrive_Flag flag = {0xFF, LIBSPECIAL_MAGIC_STRING, {0}};
+    LibSpecialDrive_Flag flag = {'\0xFF', LIBSPECIAL_MAGIC_STRING, {0}};
     uint8_t *uuid = LibSpecialDriverGenUUID();
 
     memcpy(flag.uuid, uuid, 16);
@@ -274,7 +274,7 @@ bool LibSpecialDriveMark(LibSpecialDrive *ctx, int blockNumber)
     return (success && bytesWritten == sizeof(LibSpecialDrive_Protective_MBR));
 }
 
-bool LibSpecialDriveUnmark(LibSpecialDrive *ctx, int blockNumber)
+bool LibSpecialDriveUnmark(LibSpecialDrive *ctx, size_t blockNumber)
 {
     if (!ctx || blockNumber < 0 || blockNumber >= ctx->specialBlockDeviceCount)
         return false;

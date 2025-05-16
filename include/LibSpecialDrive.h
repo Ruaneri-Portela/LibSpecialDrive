@@ -150,5 +150,5 @@ LibSpecialDrive_Partition *LibSpecialDriverGetPartition(LibSpecialDrive_BlockDev
 #endif
 LibSpecialDrive_BlockDevice *LibSpecialDriverGetBlock(const char *path);
 LibSpecialDrive *LibSpecialDriverGet(void);
-bool LibSpecialDriveMark(LibSpecialDrive *ctx, int blockNumber);
-bool LibSpecialDriveUnmark(LibSpecialDrive *ctx, int blockNumber);
+bool LibSpecialDriveMark(LibSpecialDrive *ctx, size_t blockNumber);
+bool LibSpecialDriveUnmark(LibSpecialDrive *ctx, size_t blockNumber);
