@@ -87,8 +87,8 @@ union LibSpecialDrive_PartitionMeta
 
 typedef struct
 {
-    const char *path;
-    const char *mountPoint;
+    char *path;
+    char *mountPoint;
     int64_t *lbaSize;
     union LibSpecialDrive_PartitionMeta partitionMeta;
 } LibSpecialDrive_Partition;
@@ -121,34 +121,51 @@ typedef struct
     uint8_t version[4];
 } LibSpecialDrive_Flag;
 
+#ifndef _WIN32
+typedef int LibSpecialDrive_BlockDevice;
+#define DEVICE_INVALID -1
+#else
+#include <windows.h>
+typedef HANDLE LibSpecialDrive_DeviceHandle;
+#define DEVICE_INVALID INVALID_HANDLE_VALUE
+#endif
+
+enum LibSpecialDrive_DeviceHandle_Flags
+{
+    DEVICE_FLAG_READ = 1 << 0,
+    DEVICE_FLAG_WRITE = 1 << 1,
+};
+
 #define LIBSPECIAL_MAGIC_STRING "LIBSPECIALDRIVE_DEVICE"
 
 // =====================================================================================
 // Funções Universais da Biblioteca
 // =====================================================================================
 LibSpecialDrive_Flag *LibSpecialDriverIsSpecial(LibSpecialDrive_Protective_MBR *ptr);
-uint8_t *LibSpecialDriverGenUUID(void);
+void LibSpecialDriverGenUUID(uint8_t *uuid);
 char *LibSpecialDriverGenUUIDString(uint8_t *uuid);
 bool LibSpecialDriverBlockAppend(LibSpecialDrive *driver, LibSpecialDrive_BlockDevice **blockDevice);
 void LibSpecialDriverDestroyPartition(LibSpecialDrive_Partition *part);
 void LibSpecialDriverDestroyBlock(LibSpecialDrive_BlockDevice *blk);
 void LibSpecialDriverMapperPartitionsMBR(LibSpecialDrive_BlockDevice *blk);
 void LibSpecialDriverMapperPartitionsGPT(LibSpeicalDrive_GPT_Header *header, uint8_t *partitionBuffer, LibSpecialDrive_BlockDevice *blk);
+LibSpecialDrive_Partition *LibSpecialDriverGetPartition(LibSpecialDrive_BlockDevice *blk, LibSpecialDrive_DeviceHandle device);
 bool LibSpecialDriverReload(LibSpecialDrive *ctx);
 void LibSpecialDriverDestroy(LibSpecialDrive **ctx);
+bool LibSpecialDriveMark(LibSpecialDrive *ctx, int blockNumber);
+bool LibSpecialDriveUnmark(LibSpecialDrive *ctx, int blockNumber);
+LibSpecialDrive_BlockDevice *LibSpecialDriverGetBlock(const char *path);
+LibSpecialDrive *LibSpecialDriverGet(void);
 
 // =====================================================================================
 // Funções de Sistema Dependente
 // =====================================================================================
 char *LibSpecialDriverPartitionPathLookup(const char *path, int partNumber);
 void LibSpecialDrivePartitionGetPathMount(LibSpecialDrive_Partition *part, enum LibSpecialDrive_PartitionType type);
-#ifndef _WIN32
-LibSpecialDrive_Partition *LibSpecialDriverGetPartition(LibSpecialDrive_BlockDevice *blk, int fd);
-#else
-#include <windows.h>
-LibSpecialDrive_Partition *LibSpecialDriverGetPartition(LibSpecialDrive_BlockDevice *blk, HANDLE hDevice);
-#endif
-LibSpecialDrive_BlockDevice *LibSpecialDriverGetBlock(const char *path);
-LibSpecialDrive *LibSpecialDriverGet(void);
-bool LibSpecialDriveMark(LibSpecialDrive *ctx, int blockNumber);
-bool LibSpecialDriveUnmark(LibSpecialDrive *ctx, int blockNumber);
+bool LibSpecialDriveLookUpSizes(LibSpecialDrive_DeviceHandle device, LibSpecialDrive_BlockDevice *blk);
+bool LibSpecialDriveLookUpIsRemovable(LibSpecialDrive_DeviceHandle device, LibSpecialDrive_BlockDevice *blk);
+LibSpecialDrive_DeviceHandle LibSpecialDriveOpenDevice(const char *path, enum LibSpecialDrive_DeviceHandle_Flags flags);
+bool LibSpecialDriveSeek(LibSpecialDrive_DeviceHandle device, int64_t padding);
+int64_t LibSpecialDriveRead(LibSpecialDrive_DeviceHandle device, int64_t len, uint8_t *target);
+int64_t LibSpecialDriveWrite(LibSpecialDrive_DeviceHandle device, int64_t len, uint8_t *soruce);
+void LibSpecialDriveCloseDevice(LibSpecialDrive_DeviceHandle device);
