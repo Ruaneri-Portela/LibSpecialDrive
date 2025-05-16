@@ -122,7 +122,7 @@ typedef struct
 } LibSpecialDrive_Flag;
 
 #ifndef _WIN32
-typedef int LibSpecialDrive_BlockDevice;
+typedef int LibSpecialDrive_DeviceHandle;
 #define DEVICE_INVALID -1
 #else
 #include <windows.h>
@@ -167,5 +167,5 @@ bool LibSpecialDriveLookUpIsRemovable(LibSpecialDrive_DeviceHandle device, LibSp
 LibSpecialDrive_DeviceHandle LibSpecialDriveOpenDevice(const char *path, enum LibSpecialDrive_DeviceHandle_Flags flags);
 bool LibSpecialDriveSeek(LibSpecialDrive_DeviceHandle device, int64_t padding);
 int64_t LibSpecialDriveRead(LibSpecialDrive_DeviceHandle device, int64_t len, uint8_t *target);
-int64_t LibSpecialDriveWrite(LibSpecialDrive_DeviceHandle device, int64_t len, uint8_t *soruce);
+int64_t LibSpecialDriveWrite(LibSpecialDrive_DeviceHandle device, int64_t len,const uint8_t *soruce);
 void LibSpecialDriveCloseDevice(LibSpecialDrive_DeviceHandle device);

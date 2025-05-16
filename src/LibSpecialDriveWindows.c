@@ -201,7 +201,7 @@ int64_t LibSpecialDriveRead(LibSpecialDrive_DeviceHandle device, int64_t len, ui
     return bytesRead;
 }
 
-int64_t LibSpecialDriveWrite(LibSpecialDrive_DeviceHandle device, int64_t len, uint8_t *source)
+int64_t LibSpecialDriveWrite(LibSpecialDrive_DeviceHandle device, int64_t len, const uint8_t *source)
 {
     DWORD bytesWritten = 0;
     if (!WriteFile(device, source, (DWORD)len, &bytesWritten, NULL))
