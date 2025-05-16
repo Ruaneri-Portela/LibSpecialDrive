@@ -317,10 +317,16 @@ bool LibSpecialDriveMark(LibSpecialDrive *ctx, int idx)
         return false;
     }
 
-    memcpy(blk->signature->boot_code, &flag, sizeof(flag));
-    int64_t written = LibSpecialDriveWrite(device, sizeof(flag), (uint8_t *)blk->signature);
+    if (!LibSpecialDriveSeek(device, 0))
+    {
+        LibSpecialDriveCloseDevice(device);
+        return false;
+    }
+
+    memcpy(blk->signature->boot_code, &flag, sizeof(LibSpecialDrive_Flag));
+    int64_t written = LibSpecialDriveWrite(device, sizeof(LibSpecialDrive_Flag), (uint8_t *)blk->signature);
     LibSpecialDriveCloseDevice(device);
-    return (written == sizeof(flag)) && LibSpecialDriverReload(ctx);
+    return (written == sizeof(LibSpecialDrive_Flag)) && LibSpecialDriverReload(ctx);
 }
 
 bool LibSpecialDriveUnmark(LibSpecialDrive *ctx, int idx)
@@ -342,8 +348,14 @@ bool LibSpecialDriveUnmark(LibSpecialDrive *ctx, int idx)
         return false;
     }
 
+    if (!LibSpecialDriveSeek(device, 0))
+    {
+        LibSpecialDriveCloseDevice(device);
+        return false;
+    }
+
     memset(blk->signature->boot_code, 0, sizeof(LibSpecialDrive_Flag));
-    int64_t written = LibSpecialDriveWrite(device, sizeof(LibSpecialDrive_Flag), (uint8_t *)blk->signature);
+    int64_t written = LibSpecialDriveWrite(device, sizeof(*blk->signature), (uint8_t *)blk->signature);
     LibSpecialDriveCloseDevice(device);
-    return (written == sizeof(LibSpecialDrive_Flag)) && LibSpecialDriverReload(ctx);
+    return (written == sizeof(*blk->signature)) && LibSpecialDriverReload(ctx);
 }
