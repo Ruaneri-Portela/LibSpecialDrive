@@ -74,6 +74,7 @@ void printHelp(const char *progName)
     printf("  -a             Listar tudo");
     printf("  -b             Listar apenas blocos\n");
     printf("  -p             Listar apenas partições\n");
+    printf("  -r             Recarrega os dispositivos\n");
     printf("  -m <id>        Marcar bloco comum com índice <id> como especial\n");
     printf("  -u <id>        Desmarcar bloco especial com índice <id>\n");
     printf("  -h             Mostrar esta ajuda\n");
@@ -101,25 +102,25 @@ int main(int argc, const char *argv[])
         }
         else if (strcmp(argv[i], "-p") == 0)
         {
-            listBlock(lb, true, true); // apenas partições, ocultar blocos
+            listBlock(lb, true, true);
         }
         else if (strcmp(argv[i], "-m") == 0 && i + 1 < argc)
         {
             int id = atoi(argv[++i]);
-            int result = LibSpecialDriveMark(lb, id);
-            printf("Marca: %s\n", result == 0 ? "Sucesso" : "Falha");
-            listBlock(lb, true, false);
+            printf("Marca: %s\n", LibSpecialDriveMark(lb, id) == 1 ? "Sucesso" : "Falha");
         }
         else if (strcmp(argv[i], "-u") == 0 && i + 1 < argc)
         {
             int id = atoi(argv[++i]);
-            int result = LibSpecialDriveUnmark(lb, id);
-            printf("Desmarca: %s\n", result == 0 ? "Sucesso" : "Falha");
-            listBlock(lb, true, false);
+            printf("Desmarca: %s\n", LibSpecialDriveUnmark(lb, id) == 1 ? "Sucesso" : "Falha");
         }
         else if (strcmp(argv[i], "-h") == 0)
         {
             printHelp(argv[0]);
+        }
+        else if (strcmp(argv[i], "-r") == 0)
+        {
+            LibSpecialDriverReload(lb);
         }
         else
         {

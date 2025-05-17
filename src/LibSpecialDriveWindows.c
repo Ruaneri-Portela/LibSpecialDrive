@@ -78,7 +78,7 @@ void LibSpecialDrivePartitionGetPathMount(LibSpecialDrive_Partition *part, enum 
 
             LONGLONG lbaStart = (LONGLONG)((type == PARTITION_TYPE_GPT)
                                                ? part->partitionMeta.gpt.startingLba
-                                               : part->partitionMeta.mbr.lbaStart);
+                                               : part->partitionMeta.mbr.firstLBA);
 
             for (DWORD i = 0; i < extents.NumberOfDiskExtents; ++i)
             {
@@ -187,7 +187,8 @@ LibSpecialDrive_DeviceHandle LibSpecialDriveOpenDevice(const char *path, enum Li
     HANDLE hDevice = CreateFileA(path, access, FILE_SHARE_WRITE | FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
     if (hDevice == INVALID_HANDLE_VALUE)
     {
-        fprintf(stderr, "Failed to open device %s (Error: %lu)\n", path, GetLastError());
+        if (!flags & DEVICE_FLAG_SILENCE)
+            fprintf(stderr, "Failed to open device %s (Error: %lu)\n", path, GetLastError());
     }
 
     return hDevice;
