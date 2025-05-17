@@ -163,7 +163,7 @@ LibSpecialDrive_DeviceHandle LibSpecialDriveOpenDevice(const char *path, enum Li
     }
 
     int fd = open(path, access);
-    if (fd < 0)
+    if (fd < 0 && !(flags & DEVICE_FLAG_SILENCE))
         perror("open");
 
     return fd;
