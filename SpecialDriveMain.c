@@ -1,4 +1,5 @@
 #include <LibSpecialDrive.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -22,7 +23,7 @@ void listPartition(LibSpecialDrive_BlockDevice *blk)
             free(uuidStr);
         }
 
-        printf("\t\tVolume Path: %s\n\t\tFree Space: %lu bytes\n", (part->path ? part->path : "None"), part->freeSpace);
+        printf("\t\tVolume Path: %s\n\t\tFree Space: %"PRIu64" bytes\n", (part->path ? part->path : "None"), part->freeSpace);
     }
 }
 
@@ -55,7 +56,7 @@ void listBlock(LibSpecialDrive *lb, bool listPart, bool hiddenBlock)
             char *uuidStr = LibSpecialDriverGenUUIDString(flag->uuid);
 
             if (!hiddenBlock)
-                printf("Special Device %zu: %s, Size: %lld bytes, Removable: %s\n\tSpecial UUID:%s\n",
+                printf("Special Device %zu: %s, Size: %"PRIu64" bytes, Removable: %s\n\tSpecial UUID:%s\n",
                        i, bd->path, bd->size,
                        (bd->flags & BLOCK_FLAG_IS_REMOVABLE) ? "Yes" : "No", uuidStr);
 

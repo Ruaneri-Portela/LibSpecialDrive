@@ -23,6 +23,12 @@ static bool IsMatchingExtent(const DISK_EXTENT *ext, DWORD diskNumber, LONGLONG 
 
 void LibSpecialDriverDiretoryFreeSpaceLookup(LibSpecialDrive_Partition *part)
 {
+    if (!part)
+        return;
+    part->freeSpace = 0;
+    if (!part->path)
+        return;
+
     ULARGE_INTEGER freeBytesAvailable, totalBytes, totalFreeBytes;
 
     if (GetDiskFreeSpaceExA(part->path, &freeBytesAvailable, &totalBytes, &totalFreeBytes))
@@ -30,7 +36,6 @@ void LibSpecialDriverDiretoryFreeSpaceLookup(LibSpecialDrive_Partition *part)
         part->freeSpace = freeBytesAvailable.QuadPart;
         return;
     }
-    part->freeSpace = 0;
 }
 
 char *LibSpecialDriverPartitionPathLookup(const char *path, int partitionNumber)
