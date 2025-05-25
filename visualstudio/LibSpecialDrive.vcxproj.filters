@@ -26,7 +26,7 @@
     <ClCompile Include="..\src\LibSpecialDriveMac.c">
       <Filter>Arquivos de Origem</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\LibSpecialDriverLinux.c">
+    <ClCompile Include="..\src\LibSpecialDriveLinux.c">
       <Filter>Arquivos de Origem</Filter>
     </ClCompile>
     <ClCompile Include="..\src\LibSpecialDriveWindows.c">
