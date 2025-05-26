@@ -133,6 +133,7 @@ typedef struct
     size_t specialBlockDeviceCount;
 } LibSpecialDrive;
 
+PACKED_BEGIN
 typedef struct PACKED
 {
     uint8_t hex;
@@ -140,6 +141,8 @@ typedef struct PACKED
     uint8_t uuid[16];
     uint8_t version[4];
 } LibSpecialDrive_Flag;
+
+PACKED_END
 
 #ifndef _WIN32
 typedef int LibSpecialDrive_DeviceHandle;

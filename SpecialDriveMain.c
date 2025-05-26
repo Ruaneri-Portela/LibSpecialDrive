@@ -72,7 +72,7 @@ void printHelp(const char *progName)
 {
     printf("Uso: %s [opções]\n", progName);
     printf("Opções:\n");
-    printf("  -a             Listar tudo");
+    printf("  -a             Listar tudo\n");
     printf("  -b             Listar apenas blocos\n");
     printf("  -p             Listar apenas partições\n");
     printf("  -r             Recarrega os dispositivos\n");

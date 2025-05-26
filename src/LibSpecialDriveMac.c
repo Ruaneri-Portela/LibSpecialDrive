@@ -25,6 +25,7 @@ void LibSpecialDriverDiretoryFreeSpaceLookup(LibSpecialDrive_Partition *part)
     if (statvfs(part->mountPoint, &stat) != 0)
     {
         part->freeSpace = 0;
+        return;
     }
 
     unsigned long block_size = stat.f_frsize;
