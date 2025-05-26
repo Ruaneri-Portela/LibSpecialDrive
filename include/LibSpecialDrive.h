@@ -168,29 +168,30 @@ enum LibSpecialDrive_DeviceHandle_Flags
 // Funções Universais da Biblioteca
 // =====================================================================================
 /// Internas
-LibSpecialDrive_Flag *LibSpecialDriverIsSpecial(LibSpecialDrive_Protective_MBR *ptr);
-void LibSpecialDriverGenUUID(uint8_t *uuid);
-bool LibSpecialDriverBlockAppend(LibSpecialDrive *driver, LibSpecialDrive_BlockDevice **blockDevice);
-void LibSpecialDriverDestroyPartition(LibSpecialDrive_Partition *part);
-void LibSpecialDriverDestroyBlock(LibSpecialDrive_BlockDevice *blk);
-void LibSpecialDriverMapperPartitionsMBR(LibSpecialDrive_BlockDevice *blk);
-void LibSpecialDriverMapperPartitionsGPT(LibSpecialDrive_GPT_Header *header, uint8_t *partitionBuffer, LibSpecialDrive_BlockDevice *blk);
-LibSpecialDrive_Partition *LibSpecialDriverGetPartition(LibSpecialDrive_BlockDevice *blk, LibSpecialDrive_DeviceHandle device);
-LibSpecialDrive_BlockDevice *LibSpecialDriverGetBlock(const char *path);
+LibSpecialDrive_Flag *LibSpecialDriveIsSpecial(LibSpecialDrive_Protective_MBR *ptr);
+void LibSpecialDriveGenUUID(uint8_t *uuid);
+bool LibSpecialDriveBlockAppend(LibSpecialDrive *driver, LibSpecialDrive_BlockDevice **blockDevice);
+void LibSpecialDriveDestroyPartition(LibSpecialDrive_Partition *part);
+void LibSpecialDriveDestroyBlock(LibSpecialDrive_BlockDevice *blk);
+void LibSpecialDriveMapperPartitionsMBR(LibSpecialDrive_BlockDevice *blk);
+void LibSpecialDriveMapperPartitionsGPT(LibSpecialDrive_GPT_Header *header, uint8_t *partitionBuffer, LibSpecialDrive_BlockDevice *blk);
+LibSpecialDrive_Partition *LibSpecialDriveGetPartition(LibSpecialDrive_BlockDevice *blk, LibSpecialDrive_DeviceHandle device);
+LibSpecialDrive_BlockDevice *LibSpecialDriveGetBlock(const char *path);
 
 /// Externas
-EXPORT char *LibSpecialDriverGenUUIDString(uint8_t *uuid);
-EXPORT bool LibSpecialDriverReload(LibSpecialDrive *ctx);
-EXPORT void LibSpecialDriverDestroy(LibSpecialDrive **ctx);
+EXPORT char *LibSpecialDriveGenUUIDString(uint8_t *uuid);
+EXPORT bool LibSpecialDriveReload(LibSpecialDrive *ctx);
+EXPORT void LibSpecialDriveDestroy(LibSpecialDrive **ctx);
 EXPORT bool LibSpecialDriveMark(LibSpecialDrive *ctx, int blockNumber);
 EXPORT bool LibSpecialDriveUnmark(LibSpecialDrive *ctx, int blockNumber);
-EXPORT LibSpecialDrive *LibSpecialDriverGet(void);
+EXPORT LibSpecialDrive *LibSpecialDriveGet(void);
+EXPORT void LibSpecialDriveFree(void *ptr);
 
 // =====================================================================================
 // Funções de Sistema Dependente
 // =====================================================================================
-void LibSpecialDriverDiretoryFreeSpaceLookup(LibSpecialDrive_Partition *part);
-char *LibSpecialDriverPartitionPathLookup(const char *path, int partNumber);
+void LibSpecialDriveDiretoryFreeSpaceLookup(LibSpecialDrive_Partition *part);
+char *LibSpecialDrivePartitionPathLookup(const char *path, int partNumber);
 void LibSpecialDrivePartitionGetPathMount(LibSpecialDrive_Partition *part, enum LibSpecialDrive_PartitionType type);
 bool LibSpecialDriveLookUpSizes(LibSpecialDrive_DeviceHandle device, LibSpecialDrive_BlockDevice *blk);
 bool LibSpecialDriveLookUpIsRemovable(LibSpecialDrive_DeviceHandle device, LibSpecialDrive_BlockDevice *blk);

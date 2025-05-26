@@ -21,7 +21,7 @@ static bool IsMatchingExtent(const DISK_EXTENT *ext, DWORD diskNumber, LONGLONG 
            ext->StartingOffset.QuadPart == lbaStart * lbaSize;
 }
 
-void LibSpecialDriverDiretoryFreeSpaceLookup(LibSpecialDrive_Partition *part)
+void LibSpecialDriveDiretoryFreeSpaceLookup(LibSpecialDrive_Partition *part)
 {
     if (!part)
         return;
@@ -38,7 +38,7 @@ void LibSpecialDriverDiretoryFreeSpaceLookup(LibSpecialDrive_Partition *part)
     }
 }
 
-char *LibSpecialDriverPartitionPathLookup(const char *path, int partitionNumber)
+char *LibSpecialDrivePartitionPathLookup(const char *path, int partitionNumber)
 {
     (void)partitionNumber;
     return strdup(path);
@@ -150,7 +150,7 @@ bool LibSpecialDriveLookUpIsRemovable(LibSpecialDrive_DeviceHandle device, LibSp
     return false;
 }
 
-LibSpecialDrive *LibSpecialDriverGet(void)
+LibSpecialDrive *LibSpecialDriveGet(void)
 {
     LibSpecialDrive *driver = calloc(1, sizeof(LibSpecialDrive));
     if (!driver)
@@ -162,7 +162,7 @@ LibSpecialDrive *LibSpecialDriverGet(void)
     for (DWORD i = 0;; ++i)
     {
         snprintf(path, sizeof(path), "\\\\.\\PhysicalDrive%lu", i);
-        LibSpecialDrive_BlockDevice *blk = LibSpecialDriverGetBlock(path);
+        LibSpecialDrive_BlockDevice *blk = LibSpecialDriveGetBlock(path);
 
         if (!blk)
         {
@@ -172,7 +172,7 @@ LibSpecialDrive *LibSpecialDriverGet(void)
         }
 
         failed = 0;
-        LibSpecialDriverBlockAppend(driver, &blk);
+        LibSpecialDriveBlockAppend(driver, &blk);
     }
 
     return driver;
