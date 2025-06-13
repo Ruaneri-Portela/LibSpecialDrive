@@ -18,12 +18,12 @@ void listPartition(LibSpecialDrive_BlockDevice *blk)
 
         if (blk->type == PARTITION_TYPE_GPT)
         {
-            char *uuidStr = LibSpecialDriverGenUUIDString(part->partitionMeta.gpt.uniquePartitionGuid);
+            char *uuidStr = LibSpecialDriveGenUUIDString(part->partitionMeta.gpt.uniquePartitionGuid);
             printf("\t\tUUID: %s\n", uuidStr);
-            free(uuidStr);
+            LibSpecialDriveFree(uuidStr);
         }
 
-        printf("\t\tVolume Path: %s\n\t\tFree Space: %"PRIu64" bytes\n", (part->path ? part->path : "None"), part->freeSpace);
+        printf("\t\tVolume Path: %s\n\t\tFree Space: %" PRIu64 " bytes\n", (part->path ? part->path : "None"), part->freeSpace);
     }
 }
 
@@ -53,10 +53,10 @@ void listBlock(LibSpecialDrive *lb, bool listPart, bool hiddenBlock)
         {
             LibSpecialDrive_BlockDevice *bd = &lb->specialBlockDevices[i];
             LibSpecialDrive_Flag *flag = (LibSpecialDrive_Flag *)bd->signature->boot_code;
-            char *uuidStr = LibSpecialDriverGenUUIDString(flag->uuid);
+            char *uuidStr = LibSpecialDriveGenUUIDString(flag->uuid);
 
             if (!hiddenBlock)
-                printf("Special Device %zu: %s, Size: %"PRIu64" bytes, Removable: %s\n\tSpecial UUID:%s\n",
+                printf("Special Device %zu: %s, Size: %" PRIu64 " bytes, Removable: %s\n\tSpecial UUID:%s\n",
                        i, bd->path, bd->size,
                        (bd->flags & BLOCK_FLAG_IS_REMOVABLE) ? "Yes" : "No", uuidStr);
 
@@ -72,7 +72,7 @@ void printHelp(const char *progName)
 {
     printf("Uso: %s [opções]\n", progName);
     printf("Opções:\n");
-    printf("  -a             Listar tudo");
+    printf("  -a             Listar tudo\n");
     printf("  -b             Listar apenas blocos\n");
     printf("  -p             Listar apenas partições\n");
     printf("  -r             Recarrega os dispositivos\n");
@@ -89,7 +89,7 @@ int main(int argc, const char *argv[])
         return 0;
     }
 
-    LibSpecialDrive *lb = LibSpecialDriverGet();
+    LibSpecialDrive *lb = LibSpecialDriveGet();
 
     for (int i = 1; i < argc; i++)
     {
@@ -121,7 +121,7 @@ int main(int argc, const char *argv[])
         }
         else if (strcmp(argv[i], "-r") == 0)
         {
-            LibSpecialDriverReload(lb);
+            LibSpecialDriveReload(lb);
         }
         else
         {
@@ -131,6 +131,6 @@ int main(int argc, const char *argv[])
         }
     }
 
-    LibSpecialDriverDestroy(&lb);
+    LibSpecialDriveDestroy(&lb);
     return 0;
 }

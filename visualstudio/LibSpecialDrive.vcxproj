@@ -32,7 +32,7 @@
   <ItemGroup>
     <ClCompile Include="..\src\LibSpecialDrive.c" />
     <ClCompile Include="..\src\LibSpecialDriveMac.c" />
-    <ClCompile Include="..\src\LibSpecialDriverLinux.c" />
+    <ClCompile Include="..\src\LibSpecialDriveLinux.c" />
     <ClCompile Include="..\src\LibSpecialDriveWindows.c" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

@@ -16,7 +16,7 @@
 #include <CoreFoundation/CoreFoundation.h>
 #include <LibSpecialDrive.h>
 
-void LibSpecialDriverDiretoryFreeSpaceLookup(LibSpecialDrive_Partition *part)
+void LibSpecialDriveDiretoryFreeSpaceLookup(LibSpecialDrive_Partition *part)
 {
     if (!part && !part->mountPoint)
         return;
@@ -25,6 +25,7 @@ void LibSpecialDriverDiretoryFreeSpaceLookup(LibSpecialDrive_Partition *part)
     if (statvfs(part->mountPoint, &stat) != 0)
     {
         part->freeSpace = 0;
+        return;
     }
 
     unsigned long block_size = stat.f_frsize;
@@ -32,7 +33,7 @@ void LibSpecialDriverDiretoryFreeSpaceLookup(LibSpecialDrive_Partition *part)
 }
 
 // Cria caminho para uma partição: ex. "/dev/disk2" + 1 => "/dev/disk2s1"
-char *LibSpecialDriverPartitionPathLookup(const char *path, int partitionNumber)
+char *LibSpecialDrivePartitionPathLookup(const char *path, int partitionNumber)
 {
     if (!path || partitionNumber < 0)
         return NULL;
@@ -100,7 +101,7 @@ bool LibSpecialDriveLookUpIsRemovable(LibSpecialDrive_DeviceHandle device, LibSp
 }
 
 // Função interna para desmontar disco com diskutil
-static bool LibSpecialDriverUmount(const char *path)
+static bool LibSpecialDriveUmount(const char *path)
 {
     if (!path)
         return false;
@@ -124,7 +125,7 @@ LibSpecialDrive_DeviceHandle LibSpecialDriveOpenDevice(const char *path, enum Li
     int access = 0;
     if ((flags & DEVICE_FLAG_READ) && (flags & DEVICE_FLAG_WRITE))
     {
-        if (!LibSpecialDriverUmount(path))
+        if (!LibSpecialDriveUmount(path))
             return -1;
         access = O_RDWR;
     }
@@ -192,7 +193,7 @@ void LibSpecialDriveCloseDevice(LibSpecialDrive_DeviceHandle device)
 }
 
 // Itera pelos dispositivos IOMedia e coleta os que são "whole" (inteiros)
-LibSpecialDrive *LibSpecialDriverGet(void)
+LibSpecialDrive *LibSpecialDriveGet(void)
 {
     CFMutableDictionaryRef matchingDict = IOServiceMatching(kIOMediaClass);
     if (!matchingDict)
@@ -225,7 +226,7 @@ LibSpecialDrive *LibSpecialDriverGet(void)
             snprintf(path, sizeof(path), "/dev/%s", name);
             CFRelease(bsdName);
 
-            LibSpecialDrive_BlockDevice *blk = LibSpecialDriverGetBlock(path);
+            LibSpecialDrive_BlockDevice *blk = LibSpecialDriveGetBlock(path);
             if (blk)
             {
                 if (!ctx)
@@ -238,7 +239,7 @@ LibSpecialDrive *LibSpecialDriverGet(void)
                     CFRelease(removable);
                 }
 
-                LibSpecialDriverBlockAppend(ctx, &blk);
+                LibSpecialDriveBlockAppend(ctx, &blk);
             }
         }
         IOObjectRelease(media);

@@ -21,7 +21,7 @@ static bool IsMatchingExtent(const DISK_EXTENT *ext, DWORD diskNumber, LONGLONG 
            ext->StartingOffset.QuadPart == lbaStart * lbaSize;
 }
 
-void LibSpecialDriverDiretoryFreeSpaceLookup(LibSpecialDrive_Partition *part)
+void LibSpecialDriveDiretoryFreeSpaceLookup(LibSpecialDrive_Partition *part)
 {
     if (!part)
         return;
@@ -38,7 +38,7 @@ void LibSpecialDriverDiretoryFreeSpaceLookup(LibSpecialDrive_Partition *part)
     }
 }
 
-char *LibSpecialDriverPartitionPathLookup(const char *path, int partitionNumber)
+char *LibSpecialDrivePartitionPathLookup(const char *path, int partitionNumber)
 {
     (void)partitionNumber;
     return strdup(path);
@@ -150,7 +150,7 @@ bool LibSpecialDriveLookUpIsRemovable(LibSpecialDrive_DeviceHandle device, LibSp
     return false;
 }
 
-LibSpecialDrive *LibSpecialDriverGet(void)
+LibSpecialDrive *LibSpecialDriveGet(void)
 {
     LibSpecialDrive *driver = calloc(1, sizeof(LibSpecialDrive));
     if (!driver)
@@ -162,7 +162,7 @@ LibSpecialDrive *LibSpecialDriverGet(void)
     for (DWORD i = 0;; ++i)
     {
         snprintf(path, sizeof(path), "\\\\.\\PhysicalDrive%lu", i);
-        LibSpecialDrive_BlockDevice *blk = LibSpecialDriverGetBlock(path);
+        LibSpecialDrive_BlockDevice *blk = LibSpecialDriveGetBlock(path);
 
         if (!blk)
         {
@@ -172,7 +172,7 @@ LibSpecialDrive *LibSpecialDriverGet(void)
         }
 
         failed = 0;
-        LibSpecialDriverBlockAppend(driver, &blk);
+        LibSpecialDriveBlockAppend(driver, &blk);
     }
 
     return driver;
@@ -236,6 +236,37 @@ void LibSpecialDriveCloseDevice(LibSpecialDrive_DeviceHandle device)
     {
         fprintf(stderr, "CloseHandle failed (Error: %lu)\n", GetLastError());
     }
+}
+
+BOOL WINAPI DllMain(HINSTANCE hinstDLL,DWORD fdwReason,LPVOID lpvReserved)
+{
+    // Perform actions based on the reason for calling.
+    switch (fdwReason)
+    {
+    case DLL_PROCESS_ATTACH:
+        // Initialize once for each new process.
+        // Return FALSE to fail DLL load.
+        break;
+
+    case DLL_THREAD_ATTACH:
+        // Do thread-specific initialization.
+        break;
+
+    case DLL_THREAD_DETACH:
+        // Do thread-specific cleanup.
+        break;
+
+    case DLL_PROCESS_DETACH:
+
+        if (lpvReserved != NULL)
+        {
+            break; // do not do cleanup if process termination scenario
+        }
+
+        // Perform any necessary cleanup.
+        break;
+    }
+    return TRUE;  // Successful DLL_PROCESS_ATTACH.
 }
 #else
 #define LIBSPECIALDRIVEMWIN_C_EMPTY

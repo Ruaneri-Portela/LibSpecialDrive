@@ -29,11 +29,27 @@ if(MSVC)
     endif()
 elseif(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
     message(STATUS "Compilador GCC/Clang detectado")
+
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-        target_compile_options(SpecialDrive PRIVATE -g -O0 -Wall -Wextra -Wpedantic -Wshadow -Wpointer-arith -Wcast-qual -Wconversion)
+        target_compile_options(SpecialDrive PRIVATE
+            -g -O0
+            -Wall -Wextra -Wpedantic
+            -Wshadow -Wpointer-arith -Wcast-qual -Wconversion
+        )
     elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
-        target_compile_options(SpecialDrive PRIVATE -O2 -march=native -flto -fstack-protector-strong -D_FORTIFY_SOURCE=2)
-        target_link_options(SpecialDrive PRIVATE -Wl,-z,relro,-z,now)
+        target_compile_options(SpecialDrive PRIVATE
+            -O2 -march=native -flto
+            -fstack-protector-strong
+            -D_FORTIFY_SOURCE=2
+        )
+
+        if(UNIX AND NOT APPLE)
+            # Linux-specific hardening flags
+            target_link_options(SpecialDrive PRIVATE -Wl,-z,relro,-z,now)
+        elseif(APPLE)
+            # macOS-specific linker flags (optional)
+            target_link_options(SpecialDrive PRIVATE -Wl,-dead_strip)
+        endif()
     endif()
 endif()
 
