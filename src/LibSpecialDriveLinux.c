@@ -6,9 +6,9 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <sys/mount.h>
 #include <linux/fs.h>
 #include <sys/ioctl.h>
-#include <sys/mount.h>
 #include <sys/file.h>
 #include <sys/stat.h>
 #include <sys/statvfs.h>
