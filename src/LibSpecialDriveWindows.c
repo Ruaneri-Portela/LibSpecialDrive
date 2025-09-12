@@ -192,7 +192,7 @@ LibSpecialDrive_DeviceHandle LibSpecialDriveOpenDevice(const char *path, enum Li
     HANDLE hDevice = CreateFileA(path, access, FILE_SHARE_WRITE | FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
     if (hDevice == INVALID_HANDLE_VALUE)
     {
-        if (!flags & DEVICE_FLAG_SILENCE)
+        if (!(flags & DEVICE_FLAG_SILENCE))
             fprintf(stderr, "Failed to open device %s (Error: %lu)\n", path, GetLastError());
     }
 
